@@ -52,7 +52,7 @@ display-items is overridden to make use of the pager for output.
 		     ;; REPLACE the following with a write to *page-output*
 		     ;; (format t "~A~%~%" doc)
 		     ;; BEGIN
-		     (format maxima-jupyter::*page-output* "~A~%~%" doc)
+		     (format jupyter:*page-output* "~A~%~%" doc)
 		     ;; END
 		     (format t "Unable to find documentation for `~A'.~%~
                                 Possible bug maxima-index.lisp or build_index.pl?~%"

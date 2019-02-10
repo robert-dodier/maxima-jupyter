@@ -3,29 +3,12 @@
   :version "0.6"
   :author "Frederic Peschanski (format nil \"<frederic~Apeschanski~Awork~Agmail~Acom>\" \".\" \".\" \"@\" \".\")"
   :license "BSD 2-Clause. See LICENSE."
-  :depends-on (:pzmq
-               :bordeaux-threads
-               :uuid
-               :babel
-               :ironclad
-               :iterate
-               :cl-base64
-               :cl-containers
-               :jsown
-               :trivial-gray-streams
-               :trivial-mimes)
+  :depends-on (:common-lisp-jupyter
+               :iterate)
   :serial t
   :components ((:file "packages")
                (:file "utils")
-               (:file "config")
-               (:file "channel")
-               (:file "heartbeat")
-               (:file "message")
-               (:file "shell")
-               (:file "stdin")
-               (:file "iopub")
                (:file "results")
-               (:file "evaluator")
                (:file "kernel")
                (:file "additions")
                (:file "overrides")
