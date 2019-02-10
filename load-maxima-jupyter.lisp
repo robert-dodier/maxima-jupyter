@@ -1,6 +1,9 @@
 (maxima::$load "mactex-utilities")
 (maxima::$load "stringproc")
 
+(setq maxima::$linenum 0)
+(setq maxima::*display-labels-p* t)
+
 (pushnew (make-pathname :device (pathname-device *load-truename*)
                         :directory (pathname-directory *load-truename*))
          ql:*local-project-directories*)
