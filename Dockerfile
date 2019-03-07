@@ -1,4 +1,4 @@
-FROM base/archlinux:2018.12.01
+FROM archlinux/base
 
 RUN pacman -Sy --noconfirm base-devel jupyter gnuplot maxima
 
