@@ -79,7 +79,7 @@ to send the code to the client.
         for expr = (dbm-read in-stream nil) then (dbm-read in-stream nil)
         while expr
         do
-        (maxima-jupyter::enqueue-input
+        (jupyter:enqueue-input maxima-jupyter::*kernel*
           (with-output-to-string (f)
             (mgrind (third expr) f)
             (write-char (if (eql (caar expr) 'displayinput) #\; #\$) f)))))
@@ -162,7 +162,7 @@ $quit is overridden send a condition versus signally bye.
 |#
 
 (defover $quit (orig &rest args)
-  (error (make-condition 'maxima-jupyter::quit)))
+  (error (make-condition 'jupyter:quit-condition)))
 
 
 #|

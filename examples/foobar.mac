@@ -1,0 +1,10 @@
+foo(y) := block ([u:y^2],
+  u: u+3,
+  u: u^2,
+  u);
+
+bar(x,y) := (
+  x: x+2,
+  y: y+2,
+  x: foo(y),
+  x+y);
