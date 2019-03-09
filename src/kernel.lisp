@@ -21,7 +21,7 @@
   ((in-maxima :initform t
               :accessor kernel-in-maxima))
   (:default-initargs :name "maxima-jupyter"
-                     :package :maxima
+                     :package (find-package :maxima)
                      :version "0.7"
                      :banner "maxima-jupyter: a Maxima Jupyter kernel; (C) 2019 Robert Dodier (BSD)"
                      :language-name "maxima"
