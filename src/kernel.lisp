@@ -220,7 +220,6 @@
           (cl-info::info-exact (inspect-result-symbol res)))))))
 
 (defmethod jupyter:complete-code ((k kernel) code cursor-pos)
-  (declare (ignore code cursor-pos))
   (if (kernel-in-maxima k)
     (jupyter:handling-errors
       (multiple-value-bind (word start end) (symbol-string-at-position code cursor-pos)
@@ -238,7 +237,7 @@
     (call-next-method)))
 
 (defmethod jupyter:inspect-code ((k kernel) code cursor-pos detail-level)
-  (declare (ignore code cursor-pos detail-level))
+  (declare (ignore detail-level))
   (if (kernel-in-maxima k)
     (jupyter:handling-errors
       (multiple-value-bind (word start end) (symbol-string-at-position code cursor-pos)
