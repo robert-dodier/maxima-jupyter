@@ -8,7 +8,6 @@
                :iterate)
   :serial t
   :components ((:file "packages")
-               (:file "utils")
                (:file "results")
                (:file "kernel")
                (:file "additions")
