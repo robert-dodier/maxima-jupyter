@@ -17,7 +17,7 @@
   (:report (lambda (condition stream)
              (write-string (maxima-syntax-error-message condition) stream))))
 
-(defclass kernel (jupyter:kernel)
+(defclass kernel (common-lisp-jupyter:kernel)
   ((in-maxima :initform t
               :accessor kernel-in-maxima))
   (:default-initargs :name "maxima-jupyter"
@@ -194,3 +194,55 @@
           (maxima::*alt-display2d* nil))
       (maxima::displa form))
     (make-maxima-result form :display-data t :handle t)))
+
+(defun symbol-char-p (c)
+  (and (characterp c)
+       (or (alphanumericp c)
+           (member c '(#\_ #\%)))))
+
+(defun symbol-string-at-position (value pos)
+  (let ((start-pos (if (symbol-char-p (char value pos)) pos (if (zerop pos) 0 (1- pos)))))
+    (if (symbol-char-p (char value start-pos))
+      (let ((start (1+ (or (position-if-not #'symbol-char-p value :end start-pos :from-end t) -1)))
+            (end (or (position-if-not #'symbol-char-p value :start start-pos) (length value))))
+        (values (subseq value start end) start end))
+      (values nil nil nil))))
+
+(defclass inspect-result (jupyter:result)
+  ((symbol :initarg :symbol
+           :reader inspect-result-symbol)))
+
+(defmethod jupyter:render ((res inspect-result))
+  (jsown:new-js
+    ("text/plain"
+      (string-trim '(#\Newline)
+        (with-output-to-string (*standard-output*)
+          (cl-info::info-exact (inspect-result-symbol res)))))))
+
+(defmethod jupyter:complete-code ((k kernel) code cursor-pos)
+  (declare (ignore code cursor-pos))
+  (if (kernel-in-maxima k)
+    (jupyter:handling-errors
+      (multiple-value-bind (word start end) (symbol-string-at-position code cursor-pos)
+        (when word
+          (values
+            (let ((name (concatenate 'string "$" (maxima::maybe-invert-string-case word))))
+              (with-slots (package) k
+                (iter
+                  (for sym in-package package)
+                  (for sym-name next (symbol-name sym))
+                  (when (starts-with-subseq name sym-name)
+                    (collect (maxima::print-invert-case (maxima::stripdollar sym-name)))))))
+            start
+            end))))
+    (call-next-method)))
+
+(defmethod jupyter:inspect-code ((k kernel) code cursor-pos detail-level)
+  (declare (ignore code cursor-pos detail-level))
+  (if (kernel-in-maxima k)
+    (jupyter:handling-errors
+      (multiple-value-bind (word start end) (symbol-string-at-position code cursor-pos)
+        (when word
+          (jupyter::info "~A~%" word)
+          (make-instance 'inspect-result :symbol word))))
+    (call-next-method)))

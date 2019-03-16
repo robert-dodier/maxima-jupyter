@@ -1,5 +1,5 @@
 (defpackage #:maxima-jupyter
-  (:use #:cl #:iterate)
+  (:use #:cl #:alexandria #:iterate)
   (:export
     #:make-maxima-result
     #:kernel-start-exec))
