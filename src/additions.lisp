@@ -12,6 +12,30 @@ session.
 
 #|
 
+Kernel installation functions.
+
+|#
+
+(defmfun $jupyter_system_install (&optional (local nil) (prefix nil) (maxima "maxima"))
+  (jupyter:install
+    (make-instance
+      'maxima-jupyter::system-installer
+      :local local
+      :implementation maxima
+      :prefix prefix)))
+
+(defmfun $jupyter_install (&optional (prefix nil) (maxima "maxima"))
+  (jupyter:install
+    (make-instance
+      'maxima-jupyter::user-installer
+      :implementation maxima
+      :prefix prefix)))
+
+(defmfun $jupyter_install_image ()
+  (jupyter:install (make-instance 'maxima-jupyter::user-image-installer)))
+
+#|
+
 Convenience functions to return specific types from Lisp or Maxima.
 
 |#
