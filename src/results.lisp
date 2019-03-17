@@ -35,7 +35,7 @@ Standard MIME types
   (and (listp code)
        (listp (car code))
        (eq (caar code) 'maxima::mlabel)
-       (starts-with-p (string (second code)) (string maxima::$inchar))))
+       (starts-with-subseq (string maxima::$inchar) (string (second code)))))
 
 (defun mtext-result-p (code)
   (and (listp code)
@@ -48,8 +48,8 @@ Standard MIME types
        (eq (list-length value) 3)
        (stringp (second value))
        (stringp (third value))
-       (or (ends-with-p (second value) ".gnuplot")
-           (ends-with-p (second value) ".gnuplot_pipes"))))
+       (or (ends-with-subseq ".gnuplot" (second value))
+           (ends-with-subseq ".gnuplot_pipes" (second value)))))
 
 (defun sexpr-to-text (value)
   (format nil "~S" value))

@@ -49,10 +49,10 @@ display-items is overridden to make use of the pager for output.
       (loop for item in wanted
 	    do (let ((doc (read-info-text (first item) (second item))))
 		 (if doc
-		     ;; REPLACE the following with a write to *page-output*
+		     ;; REPLACE the following with a write to *page-output* if available.
 		     ;; (format t "~A~%~%" doc)
 		     ;; BEGIN
-		     (format jupyter:*page-output* "~A~%~%" doc)
+		     (format (or jupyter:*page-output* t) "~A~%~%" doc)
 		     ;; END
 		     (format t "Unable to find documentation for `~A'.~%~
                                 Possible bug maxima-index.lisp or build_index.pl?~%"
