@@ -38,6 +38,8 @@ environment since verbatim doesn't understand math mode.
 
 |#
 
+(setq *tex-environment-default* '("\\[" . "\\]"))
+
 (setf (get 'mdefine 'tex-environment) *tex-environment-default*)
 
 (setf (get 'mdefmacro 'tex-environment) *tex-environment-default*)
