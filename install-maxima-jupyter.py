@@ -11,7 +11,13 @@ import jupyter_client
 import os
 import sys
 import tempfile
+import shutil
 
+
+def get_umask():
+    current_umask = os.umask(0)
+    os.umask(current_umask)
+    return current_umask
 
 def halt(msg):
     print(msg, file=sys.stderr)
@@ -78,6 +84,7 @@ KERNEL_SPEC = {
 }
 
 tempdir = tempfile.mkdtemp()
+os.chmod(tempdir, 0o777 & ~get_umask())
 
 with open(os.path.join(tempdir, 'kernel.json'), "w") as kernel_spec_file:
     json.dump(KERNEL_SPEC, kernel_spec_file)
@@ -85,5 +92,7 @@ with open(os.path.join(tempdir, 'kernel.json'), "w") as kernel_spec_file:
 jupyter_client.kernelspec.install_kernel_spec(tempdir, kernel_name='maxima',
                                               user=args.user,
                                               prefix=args.prefix)
+
+shutil.rmtree(tempdir)
 
 print("maxima-jupyter: installation complete.")
