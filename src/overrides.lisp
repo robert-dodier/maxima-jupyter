@@ -270,3 +270,17 @@ plot is inside of a block.
     (when (maxima-jupyter::plot-p value)
       (jupyter-file (third value) t))
     value))
+
+#|
+
+$print is overridden so that math is displayed inline.
+
+|#
+
+(defover $print (orig &rest args)
+  (jupyter:latex
+    (format nil "~{~a~^ ~}"
+                (mapcar (lambda (arg) (if (stringp arg) arg (format nil "\\(~A\\)" ($tex1 arg))))
+                        args))
+    t)
+  (car (last args)))
