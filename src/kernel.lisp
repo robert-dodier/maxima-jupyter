@@ -90,7 +90,7 @@
            (setq maxima::$_ maxima::$__)
            result)))))
 
-(defun read-and-eval (input in-maxima)
+(defun read-and-eval (kernel input in-maxima)
   (catch 'state-change
     (handling-errors
       (let ((code-to-eval (if in-maxima
@@ -98,7 +98,7 @@
                             (my-lread input))))
         (if code-to-eval
           (progn
-            (jupyter:info "[evaluator] Parsed expression to evaluate: ~W~%" code-to-eval)
+            (jupyter:inform :info kernel "Parsed expression to evaluate: ~W~%" code-to-eval)
             (when in-maxima
               (incf maxima::$linenum)
               (let ((label (maxima::makelabel maxima::$inchar)))
@@ -107,7 +107,7 @@
             (let ((result (if in-maxima
                             (my-eval code-to-eval)
                             (eval code-to-eval))))
-              (jupyter:info "[evaluator] Evaluated result: ~W~%" result)
+              (jupyter:inform :info kernel "Evaluated result: ~W~%" result)
               (when (and in-maxima (not (keyword-result-p result)))
                 (setq maxima::$% (caddr result)))
               result))
@@ -132,11 +132,11 @@
         (maxima::$stdin *query-io*)
         (maxima::$stderr *error-output*)
         (maxima::$stdout *standard-output*))
-    (jupyter:info "eval ~A~%" code)
+    (jupyter:inform :info k "eval ~A~%" code)
     (iter
       (with input = (make-string-input-stream code))
       (for in-maxima = (kernel-in-maxima k))
-      (for result = (read-and-eval input in-maxima))
+      (for result = (read-and-eval k input in-maxima))
       (until (eq result 'no-more-code))
       (for wrapped-result = (if in-maxima
                               (make-maxima-label result)
@@ -242,6 +242,6 @@
     (jupyter:handling-errors
       (multiple-value-bind (word start end) (symbol-string-at-position code cursor-pos)
         (when word
-          (jupyter::info "~A~%" word)
+          (jupyter:inform :info k "Inspect ~A~%" word)
           (make-instance 'inspect-result :symbol word))))
     (call-next-method)))
