@@ -33,10 +33,6 @@
                      :help-links '(("Maxima Reference Manual" . "http://maxima.sourceforge.net/docs/manual/maxima.html")
                                    ("Maxima Documentation" . "http://maxima.sourceforge.net/documentation.html"))))
 
-(defmethod jupyter::start :before ((k kernel))
-  (setq maxima::$linenum 0)
-  (setq maxima::*display-labels-p* t))
-
 ;; This is the entry point for a saved lisp image created by
 ;; trivial-dump-core:save-executable or equivalent.
 (defun kernel-start-exec ()
