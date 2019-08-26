@@ -247,17 +247,56 @@ jupyter-repo2docker --user-id=1000 --user-name=mj https://github.com/robert-dodi
 
 A Docker image of Maxima-Jupyter may be built using the following command
 (`sudo` may be required). This image is based on the docker image
-`base/archlinux`.
+`archlinux/base`.
 
 ```sh
 docker build --tag=maxima-jupyter .
 ```
-
-After the image is built the console may be run with
+If you'd like to build with a different user than the default (`mj`), you may
+override it with the following:
 
 ```sh
-docker run -it maxima-jupyter jupyter console --kernel=maxima
+docker build --build-arg NB_USER=alice --tag=maxima-jupyter .
 ```
+
+After the image is built the container may be run with:
+
+```sh
+docker run -it maxima-jupyter
+```
+
+The `Dockerfile` makes use of the `ENTRYPOINT` command; the default behaviour
+executes the `jupyter` binary with the arguments `console --kernel=maxima`. 
+
+If you'd like to run using Juypter's notebook web server, you may do the
+following to override the default use of `console`:
+
+```sh
+docker run -it \
+    -v `pwd`/notebooks:/home/USER/maxima-jupyter/examples \
+    -p 8888:8888 \
+    maxima-jupyter \
+    notebook --ip=0.0.0.0 --port=8888
+```
+
+where the last line is the set of arguments to `jupyter` that cause it to run
+in the notebook server mode.
+
+To run the Bash shell on the container, just override the entry point:
+
+```sh
+docker run -it --entrypoint=bash maxima-jupyter
+``` 
+
+If you cannot build the Docker image, you may use a 
+[pre-built one](https://hub.docker.com/r/calyau/maxima-jupyter)
+by subsituting the Docker image name `maxima-jupyter` in the above `docker`
+commands with `calyau/maxima-jupyter`. Note that the default user on the
+`calyau` image is not `mj`, but is rather `oubiwann`.
+
+Additional examples of notebooks created using this mode have been created
+here (taken from the Maxima tutorial):
+[https://github.com/calyau/maxima-tutorial-notebooks](https://github.com/calyau/maxima-tutorial-notebooks).
 
 ----
 
