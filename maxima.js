@@ -57,6 +57,10 @@ CodeMirror.defineMode('maxima', function(_config, _parserConfig) {
       }
     }
 
+    if (ch === '$') {
+        return 'punctuation';
+    }
+
     // go back one character
     stream.backUp(1);
 
