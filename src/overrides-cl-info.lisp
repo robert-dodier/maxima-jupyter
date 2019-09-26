@@ -54,6 +54,6 @@ display-items is overridden to make use of the pager for output.
 		     ;; BEGIN
 		     (format (or jupyter:*page-output* t) "~A~%~%" doc)
 		     ;; END
-		     (format t "Unable to find documentation for `~A'.~%~
+		     (format t "Unable to find documentation for `~A'.~%
                                 Possible bug maxima-index.lisp or build_index.pl?~%"
 			     (first (second item)))))))))
