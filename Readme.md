@@ -86,6 +86,67 @@ To try Maxima-Jupyter you need :
 
 ### Installing Maxima-Jupyter
 
+The following installation methods are still relatively new. If you experience
+any issues than please use the "Old Methods" detailed later in the document.
+
+First you must install Jupyter, then you can install Maxima-Jupyter. If you
+plan on using JupyterLab then you must install with the `--user` option.
+
+     python3 -m pip --user install jupyter jupyterlab
+
+Once Jupyter is installed you can either install from the source files of this
+repository, or you can install via the AUR if you are using Arch Linux.
+
+#### Method 1. Source Based Installation
+
+To install from the current source files first download the source files and
+then start a shell in the source directory. Then start Maxima and load the
+initialization script.
+
+```sh
+$ maxima
+Maxima 5.43.0 http://maxima.sourceforge.net
+using Lisp SBCL 1.5.5
+Distributed under the GNU Public License. See the file COPYING.
+Dedicated to the memory of William Schelter.
+The function bug_report() provides bug reporting information.
+(%i1) load("load-maxima-jupyter.lisp");
+```
+
+After the install script has loaded then install using *one* of the kernel 
+types.
+
+1. User specific Quicklisp kernel: `jupyter_install();`
+2. User specific binary image kernel: `jupyter_install_image();`
+3. System-wide Quicklisp bundled kernel: `jupyter_system_install(true, "pkg/");`
+
+After the installation is complete then exit Maxima. For the System-wide
+installation copy the files in `pkg` to the system root, i.e. 
+`sudo cp -r pkg/* /` on Linux.
+
+#### Method 2. Installation on Arch/Manjaro
+
+The package for Arch Linux is [maxima-jupyter-git][]. Building and installing
+(including dependencies) can be accomplished with:
+
+```sh
+yaourt -Sy maxima-jupyter-git
+```
+
+Alternatively use ``makepkg``:
+
+```sh
+curl -L -O https://aur.archlinux.org/cgit/aur.git/snapshot/maxima-jupyter-git.tar.gz
+tar -xvf maxima-jupyter-git.tar.gz
+cd maxima-jupyter-git
+makepkg -Csri
+```
+
+Please consult the [Arch Wiki][] for more information regarding installing
+packages from the AUR.
+
+### Installing Maxima-Jupyter (Old Method)
+
 First you must install Jupyter, then you can install Maxima-Jupyter.
 
 I installed Jupyter via:
@@ -114,7 +175,7 @@ into `/usr/local/share/jupyter/kernels/maxima/kernel.json`
 and a user installation copies `kernel.json`
 into `/home/robert/.local/share/jupyter/kernels/maxima/kernel.json`.
 
-#### Method 1. Maxima-Jupyter binary executable installation
+#### Method 1. Maxima-Jupyter binary executable installation (Old Method)
 
 The first installation method is to create a binary executable image,
 as detailed in [make-maxima-jupyter-recipe.txt][].
@@ -132,7 +193,7 @@ For a user installation,
 python3 ./install-maxima-jupyter.py --exec=path/to/maxima-jupyter-image --user
 ```
 
-#### Method 2. Maxima-Jupyter loadable source installation
+#### Method 2. Maxima-Jupyter loadable source installation (Old Method)
 
 The second installation method executes Maxima and then loads Maxima-Jupyter into Maxima.
 The advantange to this method is that the normal initialization behavior of Maxima,
@@ -161,27 +222,6 @@ The option `--maxima` may also be used to specify the location of the Maxima exe
 If not specified, the command which launches Maxima is just `maxima`,
 therefore the first instance of `maxima` in the PATH environment variable
 is the one which is executed.
-
-#### Method 3. Installation on Arch/Manjaro
-
-The package for Arch Linux is [maxima-jupyter-git][]. Building and installing
-(including dependencies) can be accomplished with:
-
-```sh
-yaourt -Sy maxima-jupyter-git
-```
-
-Alternatively use ``makepkg``:
-
-```sh
-curl -L -O https://aur.archlinux.org/cgit/aur.git/snapshot/maxima-jupyter-git.tar.gz
-tar -xvf maxima-jupyter-git.tar.gz
-cd maxima-jupyter-git
-makepkg -Csri
-```
-
-Please consult the [Arch Wiki][] for more information regarding installing
-packages from the AUR.
 
 ### Code Highlighting Installation
 
