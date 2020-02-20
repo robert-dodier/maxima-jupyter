@@ -235,7 +235,7 @@ copy [maxima.js][] to the `maxima` directory, and update
 is pretty painful, sorry about that.
 
 The Pygments lexer for Maxima is maxima_lexer.py. To install it, find the
-Pygments installation directory, copy [maxima_lexer.py][] to that directory, and
+Pygments installation directory, copy [maxima_lexer.py][] to the `lexers` directory, and
 update `lexers/_mapping.py` as shown in [pygments-mapping-patch][]. Yes, this is
 pretty painful too.
 
