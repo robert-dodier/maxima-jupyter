@@ -159,12 +159,14 @@ loadfile is overridden in case of an autoload that defines new functions.
 
 #|
 
-$quit is overridden send a condition versus signally bye.
+$quit is overridden send an ask_exit payload to the frontend. This will only
+work in the console and the Qt console. In JupyterLab this we be ignored,
+including by "terminal" sessions.
 
 |#
 
 (defover $quit (orig &rest args)
-  (error (make-condition 'jupyter:quit-condition)))
+  (jupyter:quit))
 
 
 #|
