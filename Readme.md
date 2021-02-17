@@ -339,6 +339,45 @@ here (taken from the Maxima tutorial):
 [https://github.com/calyau/maxima-tutorial-notebooks](https://github.com/calyau/maxima-tutorial-notebooks).
 
 ----
+### Another Maxima from Source and SBCL
+* Download source: https://sourceforge.net/projects/maxima/files/Maxima-source/
+* Remove maxima if already present. (apt remove maxima)
+#### Start download with SBCL
+* If haven't, install SBCL (apt install sbcl)
+1. cd /path/to/maxima-\*.tar.gz
+2. extract (tar xzvf maxima-5.44.0.tar.gz)
+3. cd maxima-*/
+4. ./configure --enable-sbcl
+5. make
+6. sudo make install (prossible alternative?)
+
+#### Test out maxima is installed.
+NOTE: I would suggest installing rlwrap and opening maxima with 'rlwrap maxima' so that the direction pad will work like a normal person.
+
+#### Install Quicklisp
+From: quicklisp.org/beta
+0. start from a directory you want...
+1. curl -O https://beta.quicklisp.org/quicklisp.lisp
+2. curl -O https://beta.quicklisp.org/quicklisp.lisp.asc
+3. gpg --verify quicklisp.lisp.asc quicklisp.lisp
+4. sbcl --load quicklisp.lisp
+5. * (quicklisp-quickstart:install)
+6. * (ql:system-apropos "vecto")
+7. * (ql:quickload "vecto")
+8. * (ql:add-to-init-file)
+9. * (quit)
+
+#### Back to maxima-jupyter
+1. cd /to/path/to/maxima-jupyter (**assuming you have cloned from github)
+2. (%i1) load("load-maxima-jupyter.lisp");
+(NOTE: fatal error: zmq.h: No such file or directory
+    6 | #include <zmq.h>
+(FIX: apt install libczmq-dev)
+3. After the install script has loaded then install using *one* of the kernel types.
+----
+
+
+----
 
 Have fun and keep me posted. Feel free to send pull requests, comments, etc.
 
