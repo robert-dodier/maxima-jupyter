@@ -373,6 +373,7 @@ From: quicklisp.org/beta
 (NOTE: fatal error: zmq.h: No such file or directory
     6 | #include <zmq.h>
 (FIX: apt install libczmq-dev)
+(NOTE: workaround for mactex-utilities and stringproc error is comment them out, which will be an issue later (maybe))
 3. After the install script has loaded then install using *one* of the kernel types.
 ----
 
