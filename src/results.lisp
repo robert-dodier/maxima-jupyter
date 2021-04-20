@@ -81,13 +81,13 @@ Standard MIME types
 (defmethod jupyter:render ((res mexpr-result))
   (let ((value (mexpr-result-value res)))
     (if (mlabel-input-result-p value)
-      (jsown:new-js
-        (*plain-text-mime-type* (mexpr-to-text value))
-        (*maxima-mime-type* (mexpr-to-maxima value)))
-      (jsown:new-js
-        (*plain-text-mime-type* (mexpr-to-text value))
-        (*latex-mime-type* (mexpr-to-latex value))
-        (*maxima-mime-type* (mexpr-to-maxima value))))))
+      `(:object-plist
+         ,*plain-text-mime-type* ,(mexpr-to-text value)
+         ,*maxima-mime-type* ,(mexpr-to-maxima value))
+      `(:object-plist
+         ,*plain-text-mime-type* ,(mexpr-to-text value)
+         ,*latex-mime-type* ,(mexpr-to-latex value)
+         ,*maxima-mime-type* ,(mexpr-to-maxima value)))))
 
 (defun make-maxima-result (value &key (display-data nil) (handle nil))
   (let ((result (cond ((typep value 'jupyter:result)

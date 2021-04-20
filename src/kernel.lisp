@@ -217,11 +217,11 @@
            :reader inspect-result-symbol)))
 
 (defmethod jupyter:render ((res inspect-result))
-  (jsown:new-js
-    ("text/plain"
-      (string-trim '(#\Newline)
+  `(:object-plist
+     "text/plain"
+     ,(string-trim '(#\Newline)
         (with-output-to-string (*standard-output*)
-          (cl-info::info-exact (inspect-result-symbol res)))))))
+          (cl-info::info-exact (inspect-result-symbol res))))))
 
 (defmethod jupyter:complete-code ((k kernel) ms code cursor-pos)
   (if (kernel-in-maxima k)
