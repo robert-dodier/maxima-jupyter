@@ -23,7 +23,7 @@
   (:default-initargs :name "maxima-jupyter"
                      :package (find-package :maxima)
                      :version "0.7"
-                     :banner "maxima-jupyter: a Maxima Jupyter kernel; (C) 2019 Robert Dodier (BSD)"
+                     :banner "maxima-jupyter: a Maxima Jupyter kernel; (C) 2019-2021 Robert Dodier (BSD)"
                      :language-name "maxima"
                      :language-version maxima::*autoconf-version*
                      :mime-type *maxima-mime-type*
@@ -117,15 +117,6 @@
               result))
           'no-more-code)))))
 
-(defun make-maxima-label (result)
-  (cond
-    ((displayinput-result-p result)
-      (let ((label (maxima::makelabel maxima::$outchar)))
-        (unless maxima::$nolabels
-          (setf (symbol-value label) (third result)))
-        (make-maxima-result `((maxima::mlabel) ,label ,(third result)))))
-    ((lisp-result-p result)
-      (jupyter:make-lisp-result (second result)))))
 
 (defmethod jupyter:evaluate-code ((k kernel) code)
   (let ((*kernel* k)
@@ -137,17 +128,35 @@
         (maxima::$stderr *error-output*)
         (maxima::$stdout *standard-output*))
     (jupyter:inform :info k "eval ~A~%" code)
-    (iter
-      (with input = (make-string-input-stream code))
-      (for in-maxima = (kernel-in-maxima k))
-      (for result = (read-and-eval k input in-maxima))
-      (until (eq result 'no-more-code))
-      (for wrapped-result = (if in-maxima
-                              (make-maxima-label result)
-                              (jupyter:make-lisp-result result)))
-      (when wrapped-result
-        (collect wrapped-result))
-      (until (jupyter:quit-eval-error-p wrapped-result)))))
+    (with-input-from-string (input code)
+      (prog (result ename evalue traceback in-maxima label value)
+       repeat
+        (setf in-maxima (kernel-in-maxima k))
+        (multiple-value-setq (result ename evalue traceback)
+                             (read-and-eval k input in-maxima))
+        (when ename
+          (return (values ename evalue traceback)))
+        (cond
+          ((eq result 'no-more-code))
+          ((not in-maxima)
+            (jupyter:execute-result result))
+          ((lisp-result-p result)
+            (jupyter:execute-result (second result)))
+          ((not (displayinput-result-p result)))
+          ((eq (third result) 'maxima::maxima-error)
+            (return (values "maxima-error" (second maxima::$error))))
+          (t
+            (setf label (maxima::makelabel maxima::$outchar)
+                  value `((maxima::mlabel) ,label ,(third result)))
+            (unless maxima::$nolabels
+              (setf (symbol-value label) (third result)))
+            (jupyter:execute-result
+              (jupyter:make-mime-bundle
+                (list :object-plist
+                      *plain-text-mime-type* (mexpr-to-text value)
+                      *latex-mime-type* (mexpr-to-latex value)
+                      *maxima-mime-type* (mexpr-to-maxima value))))))))))
+
 
 (defun state-change-p (expr)
   (and (listp expr)
@@ -197,7 +206,7 @@
     (let ((maxima::*alt-display1d* nil)
           (maxima::*alt-display2d* nil))
       (maxima::displa form))
-    (make-maxima-result form :display-data t :handle t)))
+    (jupyter:display-data form)))
 
 (defun symbol-char-p (c)
   (and (characterp c)
@@ -212,16 +221,6 @@
         (values (subseq value start end) start end))
       (values nil nil nil))))
 
-(defclass inspect-result (jupyter:result)
-  ((symbol :initarg :symbol
-           :reader inspect-result-symbol)))
-
-(defmethod jupyter:render ((res inspect-result))
-  `(:object-plist
-     "text/plain"
-     ,(string-trim '(#\Newline)
-        (with-output-to-string (*standard-output*)
-          (cl-info::info-exact (inspect-result-symbol res))))))
 
 (defmethod jupyter:complete-code ((k kernel) ms code cursor-pos)
   (if (kernel-in-maxima k)
@@ -234,7 +233,10 @@
                 (for sym in-package package)
                 (for sym-name next (symbol-name sym))
                 (when (starts-with-subseq name sym-name)
-                  (jupyter:match-set-add ms (maxima::print-invert-case (maxima::stripdollar sym-name)) start end))))))))
+                  (jupyter:match-set-add ms (maxima::print-invert-case (maxima::stripdollar sym-name))
+                                            start end
+                                            :type (if (fboundp sym) "function" "variable"))))))))
+      (values))
     (call-next-method)))
 
 (defmethod jupyter:inspect-code ((k kernel) code cursor-pos detail-level)
@@ -244,5 +246,7 @@
       (multiple-value-bind (word start end) (symbol-string-at-position code cursor-pos)
         (when word
           (jupyter:inform :info k "Inspect ~A~%" word)
-          (make-instance 'inspect-result :symbol word))))
+          (jupyter:text (string-trim '(#\Newline)
+                                     (with-output-to-string (*standard-output*)
+                                       (cl-info::info-exact word)))))))
     (call-next-method)))
