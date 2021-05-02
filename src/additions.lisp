@@ -130,3 +130,6 @@ Convenience functions to return specific types from Lisp or Maxima.
 
 (defmfun $jupyter_svg (value &optional (display-data nil))
   (jupyter:svg value :display display-data))
+
+(defmfun $jupyter_display (value &optional id update)
+  (jupyter:display value :id id :update update))

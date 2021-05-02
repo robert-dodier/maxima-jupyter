@@ -51,16 +51,15 @@
       (jupyter:handling-errors ,@body))))
 
 (defun my-mread (input)
-  (when (and (open-stream-p input) (peek-char nil input nil))
-    (let ((maxima::*mread-prompt* "")
-          (maxima::*prompt-on-read-hang*))
-      (declare (special maxima::*mread-prompt*
-                        maxima::*prompt-on-read-hang*))
-      (maxima::dbm-read input nil))))
+  (let ((maxima::*mread-prompt* "")
+        (maxima::*prompt-on-read-hang*))
+    (declare (special maxima::*mread-prompt*
+                      maxima::*prompt-on-read-hang*))
+    (or (maxima::dbm-read input nil) :eof)))
+
 
 (defun my-lread (input)
-  (when (and (open-stream-p input) (peek-char nil input nil))
-    (read input)))
+  (read input nil :eof))
 
 (defun keyword-lisp-p (code)
   (and (consp code)
@@ -100,8 +99,10 @@
       (let ((code-to-eval (if in-maxima
                             (my-mread input)
                             (my-lread input))))
-        (if code-to-eval
-          (progn
+        (cond
+          ((eq :eof code-to-eval)
+            :eof)
+          (t
             (jupyter:inform :info kernel "Parsed expression to evaluate: ~W~%" code-to-eval)
             (when in-maxima
               (incf maxima::$linenum)
@@ -114,8 +115,7 @@
               (jupyter:inform :info kernel "Evaluated result: ~W~%" result)
               (when (and in-maxima (not (keyword-result-p result)))
                 (setq maxima::$% (caddr result)))
-              result))
-          'no-more-code)))))
+              result)))))))
 
 
 (defmethod jupyter:evaluate-code ((k kernel) code)
@@ -127,7 +127,6 @@
         (maxima::$stdin *query-io*)
         (maxima::$stderr *error-output*)
         (maxima::$stdout *standard-output*))
-    (jupyter:inform :info k "eval ~A~%" code)
     (with-input-from-string (input code)
       (prog (result ename evalue traceback in-maxima label value)
        repeat
@@ -137,7 +136,8 @@
         (when ename
           (return (values ename evalue traceback)))
         (cond
-          ((eq result 'no-more-code))
+          ((eq result :eof)
+            (return))
           ((not in-maxima)
             (jupyter:execute-result result))
           ((lisp-result-p result)
@@ -155,7 +155,8 @@
                 (list :object-plist
                       *plain-text-mime-type* (mexpr-to-text value)
                       *latex-mime-type* (mexpr-to-latex value)
-                      *maxima-mime-type* (mexpr-to-maxima value))))))))))
+                      *maxima-mime-type* (mexpr-to-maxima value))))))
+        (go repeat)))))
 
 
 (defun state-change-p (expr)
@@ -206,7 +207,7 @@
     (let ((maxima::*alt-display1d* nil)
           (maxima::*alt-display2d* nil))
       (maxima::displa form))
-    (jupyter:display-data form)))
+    (jupyter:display form)))
 
 (defun symbol-char-p (c)
   (and (characterp c)
