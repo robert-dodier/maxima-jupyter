@@ -47,7 +47,7 @@ USER ${NB_USER}
 RUN mkdir -p ${JUPYTERLAB_DIR}/staging/node_modules/codemirror/mode/maxima/ && \
     cp maxima.js ${JUPYTERLAB_DIR}/staging/node_modules/codemirror/mode/maxima/ && \
     patch ${JUPYTERLAB_DIR}/staging/node_modules/codemirror/mode/meta.js codemirror-mode-meta-patch && \
-    jupyter labextension build && \
+    jupyter lab build && \
     maxima --batch-string="load(\"load-maxima-jupyter.lisp\");jupyter_install();"
 
 WORKDIR ${HOME}/maxima-jupyter/examples
