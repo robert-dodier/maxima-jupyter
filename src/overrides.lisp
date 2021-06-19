@@ -284,5 +284,5 @@ $print is overridden so that math is displayed inline.
     (format nil "~{~a~^ ~}"
                 (mapcar (lambda (arg) (if (stringp arg) arg (format nil "\\(~A\\)" ($tex1 arg))))
                         args))
-    t)
+    :display t)
   (car (last args)))

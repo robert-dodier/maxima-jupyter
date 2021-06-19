@@ -74,34 +74,3 @@ Standard MIME types
     (with-output-to-string (f)
       (maxima::mgrind value f))))
 
-(defclass mexpr-result (jupyter:result)
-  ((value :initarg :value
-          :reader mexpr-result-value)))
-
-(defmethod jupyter:render ((res mexpr-result))
-  (let ((value (mexpr-result-value res)))
-    (if (mlabel-input-result-p value)
-      `(:object-plist
-         ,*plain-text-mime-type* ,(mexpr-to-text value)
-         ,*maxima-mime-type* ,(mexpr-to-maxima value))
-      `(:object-plist
-         ,*plain-text-mime-type* ,(mexpr-to-text value)
-         ,*latex-mime-type* ,(mexpr-to-latex value)
-         ,*maxima-mime-type* ,(mexpr-to-maxima value)))))
-
-(defun make-maxima-result (value &key (display-data nil) (handle nil))
-  (let ((result (cond ((typep value 'jupyter:result)
-                        value)
-                      ((eq value 'maxima::maxima-error)
-                        (jupyter:make-error-result "maxima-error" (second maxima::$error)))
-                      ((lisp-result-p value)
-                        (jupyter:make-lisp-result (second value)))
-                      ((and (mlabel-result-p value) (typep (third value) 'jupyter:result))
-                        (third value))
-                      (t
-                        (make-instance 'mexpr-result :value value :display-data display-data)))))
-    (if (and handle display-data)
-      (progn
-        (jupyter:send-result result)
-        t)
-      result)))
