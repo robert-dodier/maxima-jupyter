@@ -25,7 +25,6 @@ USER ${NB_USER}
 
 RUN jupyter serverextension enable --user --py jupyterlab; \
     jupyter labextension install @jupyter-widgets/jupyterlab-manager; \
-    jupyter nbextension enable --user --py widgetsnbextension; \
     curl -kLO https://beta.quicklisp.org/quicklisp.lisp; \
     sbcl --non-interactive --load quicklisp.lisp \
       --eval "(quicklisp-quickstart:install)" \
@@ -48,6 +47,7 @@ USER ${NB_USER}
 RUN mkdir -p ${JUPYTERLAB_DIR}/staging/node_modules/codemirror/mode/maxima/ && \
     cp maxima.js ${JUPYTERLAB_DIR}/staging/node_modules/codemirror/mode/maxima/ && \
     patch ${JUPYTERLAB_DIR}/staging/node_modules/codemirror/mode/meta.js codemirror-mode-meta-patch && \
+    jupyter labextension build && \
     maxima --batch-string="load(\"load-maxima-jupyter.lisp\");jupyter_install();"
 
 WORKDIR ${HOME}/maxima-jupyter/examples
