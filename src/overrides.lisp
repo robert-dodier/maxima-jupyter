@@ -286,3 +286,42 @@ $print is overridden so that math is displayed inline.
                         args))
     :display t)
   (car (last args)))
+
+
+(defun break-dbm-loop (at)
+  (let* ((*quit-tags* (cons (cons *break-level* *quit-tag*) *quit-tags*))
+         (*break-level* (if (not at) *break-level* (cons t *break-level*)))
+         (*quit-tag* (cons nil nil))
+         (*break-env* *break-env*)
+         (*mread-prompt* "")
+         (*diff-bindlist* nil)
+         (*diff-mspeclist* nil))
+    (unwind-protect
+        (restart-bind
+          ((cl:continue
+             (lambda ()
+               (return-from break-dbm-loop :resume))
+             :report-function (lambda (stream)
+                                (write-string "Continue evaluation" stream)))
+           (maxima-jupyter::next
+             (lambda ()
+               (step-next)
+               (return-from break-dbm-loop :resume))
+             :report-function (lambda (stream)
+                                (write-string "Step next" stream)))
+           (maxima-jupyter::into
+             (lambda ()
+               (step-into)
+               (return-from break-dbm-loop :resume))
+             :report-function (lambda (stream)
+                                (write-string "Step into" stream))))
+          (let ((environment (make-instance 'jupyter:debug-environment
+                                            :condition nil
+                                            :restarts (compute-restarts)
+                                            :frames (maxima-jupyter::calculate-debug-frames))))
+            (unless at
+              (break-frame 0 nil))
+            (jupyter:debug-stop "exception" environment)))
+      (restore-bindings)))
+  :resume)
+

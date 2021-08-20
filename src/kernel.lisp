@@ -5,8 +5,8 @@
 (defparameter +status-invalid+ "invalid")
 (defparameter +status-unknown+ "unknown")
 
-(defvar *kernel* nil)
 (defvar *page-output* nil)
+(defvar +abort-report+ "Exit debugger and halt cell execution.")
 
 (defparameter overrides (make-hash-table))
 
@@ -25,6 +25,7 @@
                      :version "0.7"
                      :banner "maxima-jupyter: a Maxima Jupyter kernel; (C) 2019-2021 Robert Dodier (BSD)"
                      :language-name "maxima"
+                     :debugger t
                      :language-version maxima::*autoconf-version*
                      :mime-type *maxima-mime-type*
                      :file-extension ".mac"
@@ -55,7 +56,7 @@
         (maxima::*prompt-on-read-hang*))
     (declare (special maxima::*mread-prompt*
                       maxima::*prompt-on-read-hang*))
-    (or (maxima::dbm-read input nil) :eof)))
+    (or (maxima::mread input) :eof)))
 
 
 (defun my-lread (input)
@@ -95,46 +96,45 @@
 
 (defun read-and-eval (kernel input in-maxima)
   (catch 'state-change
-    (handling-errors
-      (let ((code-to-eval (if in-maxima
-                            (my-mread input)
-                            (my-lread input))))
-        (cond
-          ((eq :eof code-to-eval)
-            :eof)
-          (t
-            (jupyter:inform :info kernel "Parsed expression to evaluate: ~W~%" code-to-eval)
-            (when in-maxima
-              (incf maxima::$linenum)
-              (let ((label (maxima::makelabel maxima::$inchar)))
-                (unless maxima::$nolabels
-                  (setf (symbol-value label) (third code-to-eval)))))
-            (let ((result (if in-maxima
-                            (my-eval code-to-eval)
-                            (eval code-to-eval))))
-              (jupyter:inform :info kernel "Evaluated result: ~W~%" result)
-              (when (and in-maxima (not (keyword-result-p result)))
-                (setq maxima::$% (caddr result)))
-              result)))))))
+    (let ((code-to-eval (if in-maxima
+                          (my-mread input)
+                          (my-lread input))))
+      (cond
+        ((eq :eof code-to-eval)
+          :eof)
+        (t
+          (jupyter:inform :info kernel "Parsed expression to evaluate: ~W~%" code-to-eval)
+          (when in-maxima
+            (incf maxima::$linenum)
+            (setf maxima::*step-next* nil
+                  maxima::*break-step* nil)
+            (let ((label (maxima::makelabel maxima::$inchar)))
+              (unless maxima::$nolabels
+                (setf (symbol-value label) (third code-to-eval)))))
+          (let ((result (if in-maxima
+                          (my-eval code-to-eval)
+                          (eval code-to-eval))))
+            (jupyter:inform :info kernel "Evaluated result: ~W~%" result)
+            (when (and in-maxima (not (keyword-result-p result)))
+              (setq maxima::$% (caddr result)))
+            result))))))
 
 
-(defmethod jupyter:evaluate-code ((k kernel) code)
-  (let ((*kernel* k)
-        (maxima::*alt-display1d* #'my-displa)
-        (maxima::*alt-display2d* #'my-displa)
-        (maxima::*prompt-prefix* (jupyter:kernel-prompt-prefix k))
-        (maxima::*prompt-suffix* (jupyter:kernel-prompt-suffix k))
-        (maxima::$stdin *query-io*)
-        (maxima::$stderr *error-output*)
-        (maxima::$stdout *standard-output*))
-    (with-input-from-string (input code)
-      (prog (result ename evalue traceback in-maxima label value)
+(defun repl (code source-path breakpoints)
+  (with-open-file (input source-path)
+    (maxima::get-instream input)
+    (let ((maxima::$load_pathname (when source-path (namestring source-path)))
+          (maxima::*alt-display1d* #'my-displa)
+          (maxima::*alt-display2d* #'my-displa)
+          (maxima::*prompt-prefix* (jupyter:kernel-prompt-prefix jupyter:*kernel*))
+          (maxima::*prompt-suffix* (jupyter:kernel-prompt-suffix jupyter:*kernel*))
+          (maxima::$stdin *query-io*)
+          (maxima::$stderr *error-output*)
+          (maxima::$stdout *standard-output*))
+      (prog (result in-maxima label value)
        repeat
-        (setf in-maxima (kernel-in-maxima k))
-        (multiple-value-setq (result ename evalue traceback)
-                             (read-and-eval k input in-maxima))
-        (when ename
-          (return (values ename evalue traceback)))
+        (setf in-maxima (kernel-in-maxima jupyter:*kernel*)
+              result (read-and-eval jupyter:*kernel* input in-maxima))
         (cond
           ((eq result :eof)
             (return))
@@ -157,6 +157,40 @@
                       *latex-mime-type* (mexpr-to-latex value)
                       *maxima-mime-type* (mexpr-to-maxima value))))))
         (go repeat)))))
+
+
+(defmethod jupyter:evaluate-code ((k kernel) code &optional source-path breakpoints)
+  (maxima::$debugmode (jupyter:kernel-debugger-started k))
+  (if (jupyter:kernel-debugger-started k)
+    (restart-bind
+        ((abort
+           (lambda ()
+             (return-from jupyter:evaluate-code (values "ABORT" "Cell execution halted." nil)))
+           :report-function (lambda (stream)
+                              (write-string +abort-report+ stream))))
+      (jupyter:handling-errors (repl code source-path breakpoints)))))
+
+
+(defmethod jupyter:debug-continue ((k kernel) environment &optional restart-number)
+  (cond
+    ((not (kernel-in-maxima k))
+      (call-next-method))
+    (restart-number
+      (invoke-restart-interactively (elt (jupyter:debug-environment-restarts environment) restart-number)))
+    (t
+      (invoke-restart 'continue))))
+
+
+(defmethod jupyter:debug-next ((k kernel) environment)
+  (if (kernel-in-maxima k)
+    (invoke-restart 'next)
+    (call-next-method)))
+
+
+(defmethod jupyter:debug-in ((k kernel) environment)
+  (if (kernel-in-maxima k)
+    (invoke-restart 'into)
+    (call-next-method)))
 
 
 (defun state-change-p (expr)
@@ -195,11 +229,11 @@
       +status-invalid+)))
 
 (defun to-lisp ()
-  (setf (kernel-in-maxima *kernel*) nil)
+  (setf (kernel-in-maxima jupyter:*kernel*) nil)
   (throw 'state-change :no-output))
 
 (defun to-maxima ()
-  (setf (kernel-in-maxima *kernel*) t)
+  (setf (kernel-in-maxima jupyter:*kernel*) t)
   (throw 'state-change :no-output))
 
 (defun my-displa (form)
@@ -240,6 +274,7 @@
       (values))
     (call-next-method)))
 
+
 (defmethod jupyter:inspect-code ((k kernel) code cursor-pos detail-level)
   (declare (ignore detail-level))
   (if (kernel-in-maxima k)
@@ -251,3 +286,150 @@
                                      (with-output-to-string (*standard-output*)
                                        (cl-info::info-exact word)))))))
     (call-next-method)))
+
+
+(defclass debug-frame (jupyter:debug-frame)
+  ())
+
+
+(defclass debug-local-scope (jupyter:debug-scope)
+  ()
+  (:default-initargs
+    :name "Locals"
+    :presentation-hint "locals"))
+
+
+(defclass debug-globals-scope (jupyter:debug-scope)
+  ()
+  (:default-initargs
+    :name "Globals"
+    :presentation-hint "globals"))
+
+
+(defclass debug-variable (jupyter:debug-variable)
+  ())
+
+
+(defun calculate-debug-frames ()
+  (do ((i maxima::*current-frame* (1+ i))
+       frames)
+      (nil)
+    (multiple-value-bind (fname vals params backtr lineinfo bdlist)
+                         (maxima::frame-info i)
+      (declare (ignore vals params backtr bdlist))
+      (unless fname
+        (return (nreverse frames)))
+      (push (make-instance 'debug-frame
+                           :data i
+                           :source (make-instance 'jupyter:debug-source
+                                                  :name (maxima::short-name (cadr lineinfo))
+                                                  :path (cadr lineinfo))
+                           :line (1+ (car lineinfo))
+                           :name (maxima::$sconcat fname))
+            frames))))
+
+
+(defmethod jupyter:debug-object-children-resolve ((instance debug-frame))
+  (list (make-instance 'debug-local-scope
+                       :environment (jupyter:debug-object-environment instance)
+                       :parent instance)))
+
+
+(defun make-debug-variable (name &optional (value nil value-present-p) (env nil env-present-p))
+  (let ((var (make-instance 'debug-variable
+                            :name (maxima::$sconcat name))))
+    (when value-present-p
+      (setf (jupyter:debug-object-value var) (maxima::$sconcat value)
+            (jupyter:debug-object-type var) (write-to-string (type-of value))
+            (jupyter:debug-object-data var) value))
+    (unless (or (typep value 'standard-object)
+                (typep value 'structure-object))
+      (setf (jupyter:debug-object-id var) 0))
+    (when env-present-p
+      (setf (jupyter::debug-object-environment var) env)
+      (jupyter::register-debug-object var))
+    var))
+
+
+(defmethod jupyter:debug-object-children-resolve ((instance debug-local-scope))
+  (multiple-value-bind (fname vals params backtr lineinfo bdlist)
+                       (maxima::frame-info (jupyter:debug-object-data (jupyter:debug-object-parent instance)))
+    (declare (ignore fname backtr lineinfo bdlist))
+    (mapcar #'make-debug-variable params vals)))
+
+
+(defmethod jupyter:debug-inspect-variables ((kernel kernel) environment)
+  (if (kernel-in-maxima kernel)
+    (let (variables)
+      (setf (fill-pointer (jupyter::debug-environment-objects environment)) 1)
+      (dolist (symbol (cdr maxima::$values))
+        (push (make-debug-variable symbol (symbol-value symbol) environment) variables))
+      (stable-sort variables #'string<
+                   :key (lambda (variable)
+                          (write-to-string (jupyter:debug-object-name variable)))))
+    (call-next-method)))
+
+
+(defun activate-breakpoint (index)
+  (unless (first (elt maxima::*break-points* index))
+    (pop (elt maxima::*break-points* index))))
+
+
+(defun deactivate-breakpoint (index)
+  (when (first (elt maxima::*break-points* index))
+    (push nil (elt maxima::*break-points* index))))
+
+
+(defun breakpoint-match-p (source breakpoint index &aux
+                           (bp (elt maxima::*break-points* index))
+                           (path (namestring source))
+                           (line (1- (jupyter:debug-breakpoint-line breakpoint))))
+  (values (or (and (null (first bp))
+                   (equal path (third bp))
+                   (equal line (fourth bp)))
+              (and (first bp)
+                   (equal path (second bp))
+                   (equal line (third bp))))
+          (and (first bp) t)))
+
+
+(defmethod jupyter:debug-remove-breakpoint ((kernel kernel) source breakpoint)
+  (j:inform :info kernel "dffg")
+  (dotimes (i (length maxima::*break-points*))
+    (multiple-value-bind (matches active)
+                         (breakpoint-match-p source breakpoint i)
+      (j:inform :info kernel "~a ~A~%" matches active)
+      (when (and matches active)
+        (deactivate-breakpoint i)))))
+
+
+(defun make-breakpoint (path line)
+  (do-symbols (sym "MAXIMA")
+    (let ((info (maxima::set-full-lineinfo sym)))
+      (when (typep info 'vector)
+        (map nil (lambda (form-info)
+                   (when (listp form-info)
+                     (let ((line-info (maxima::get-lineinfo form-info)))
+                       (j:inform :info nil "~a" line-info)
+                       (when (and (equal (first line-info) line)
+                                  (equal (second line-info) path))
+                         (maxima::insert-break-point
+                           (maxima::make-bkpt :form form-info
+                                              :file-line line
+                                              :file path
+                                              :function (fourth line-info)))
+                         (j:inform :info nil "~a ~a" path line)))))
+             info)))))
+
+
+(defmethod jupyter:debug-activate-breakpoints ((kernel kernel) source breakpoints)
+  (declare (ignore kernel))
+  (dolist (breakpoint breakpoints)
+    (dotimes (i (length maxima::*break-points*)
+                (make-breakpoint (namestring source) (1- (jupyter:debug-breakpoint-line breakpoint))))
+      (multiple-value-bind (matches active)
+                           (breakpoint-match-p source breakpoint i)
+        (when matches
+          (unless active
+            (activate-breakpoint i))
+          (return))))))
