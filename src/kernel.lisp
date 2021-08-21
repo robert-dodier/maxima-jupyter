@@ -168,7 +168,8 @@
              (return-from jupyter:evaluate-code (values "ABORT" "Cell execution halted." nil)))
            :report-function (lambda (stream)
                               (write-string +abort-report+ stream))))
-      (jupyter:handling-errors (repl code source-path breakpoints)))))
+      (repl code source-path breakpoints))
+    (jupyter:handling-errors (repl code source-path breakpoints))))
 
 
 (defmethod jupyter:debug-continue ((k kernel) environment &optional restart-number)
@@ -190,6 +191,15 @@
 (defmethod jupyter:debug-in ((k kernel) environment)
   (if (kernel-in-maxima k)
     (invoke-restart 'into)
+    (call-next-method)))
+
+
+(defmethod jupyter:debug-evaluate ((kernel kernel) environment code frame)
+  (if (kernel-in-maxima kernel)
+    (make-debug-variable "EVAL"
+                         (my-eval (with-input-from-string (stream code)
+                                    (my-mread stream)))
+                         environment)
     (call-next-method)))
 
 
