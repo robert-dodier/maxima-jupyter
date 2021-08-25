@@ -81,7 +81,7 @@ to send the code to the client.
         for expr = (dbm-read in-stream nil) then (dbm-read in-stream nil)
         while expr
         do
-        (jupyter:enqueue-input maxima-jupyter::*kernel*
+        (jupyter:enqueue-input jupyter:*kernel*
           (with-output-to-string (f)
             (mgrind (third expr) f)
             (write-char (if (eql (caar expr) 'displayinput) #\; #\$) f)))))
@@ -325,3 +325,6 @@ $print is overridden so that math is displayed inline.
       (restore-bindings)))
   :resume)
 
+
+(defun mbreak-loop ()
+  (break-dbm-loop nil))

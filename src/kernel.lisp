@@ -1,5 +1,6 @@
 (in-package #:maxima-jupyter)
 
+
 (defparameter +status-complete+ "complete")
 (defparameter +status-incomplete+ "incomplete")
 (defparameter +status-invalid+ "invalid")
@@ -10,12 +11,14 @@
 
 (defparameter overrides (make-hash-table))
 
+
 (define-condition maxima-syntax-error (error)
   ((message :initarg :message
             :reader maxima-syntax-error-message))
   (:documentation "Maxima syntax error.")
   (:report (lambda (condition stream)
              (write-string (maxima-syntax-error-message condition) stream))))
+
 
 (defclass kernel (common-lisp-jupyter:kernel)
   ((in-maxima :initform t
@@ -34,9 +37,11 @@
                      :help-links '(("Maxima Reference Manual" . "http://maxima.sourceforge.net/docs/manual/maxima.html")
                                    ("Maxima Documentation" . "http://maxima.sourceforge.net/documentation.html"))))
 
+
 (defmethod jupyter::start :before ((k kernel))
   (setq maxima::$linenum 0)
   (setq maxima::*display-labels-p* t))
+
 
 ;; This is the entry point for a saved lisp image created by
 ;; trivial-dump-core:save-executable or equivalent.
@@ -45,11 +50,6 @@
   (setq *read-default-float-format* 'double-float)
   (jupyter:run-kernel 'kernel (car (uiop:command-line-arguments))))
 
-;;; Based on macro taken from: http://www.cliki.net/REPL
-(defmacro handling-errors (&body body)
-  `(catch 'maxima::return-from-debugger
-    (catch 'maxima::macsyma-quit
-      (jupyter:handling-errors ,@body))))
 
 (defun my-mread (input)
   (let ((maxima::*mread-prompt* "")
@@ -62,12 +62,6 @@
 (defun my-lread (input)
   (read input nil :eof))
 
-(defun keyword-lisp-p (code)
-  (and (consp code)
-       (or (equal ':lisp (car code)) (equal ':lisp-quiet (car code)))))
-
-(defun keyword-command-p (code)
-  (and (consp code) (keywordp (car code))))
 
 (defun apply-overrides ()
   (iter
@@ -78,98 +72,67 @@
           (apply ,handler ,(fdefinition fun-name) args))))
       (remhash fun-name overrides))))
 
-(defun my-eval (code)
-  (let ((*package* (find-package :maxima)))
-    (apply-overrides)
-    (cond ((keyword-lisp-p code)
-           (cons (list (car code))
-                 (multiple-value-list (eval (cons 'progn code)))))
-          ((keyword-command-p code)
-           (cons (list (car code))
-                 (maxima::break-call (car code) (cdr code)
-                                     'maxima::break-command)))
-          (t
-           (setq maxima::$__ (third code))
-           (let ((result (maxima::meval* code)))
-           (setq maxima::$_ maxima::$__)
-           result)))))
 
-(defun read-and-eval (kernel input in-maxima)
-  (catch 'state-change
-    (let ((code-to-eval (if in-maxima
-                          (my-mread input)
-                          (my-lread input))))
-      (cond
-        ((eq :eof code-to-eval)
-          :eof)
-        (t
-          (jupyter:inform :info kernel "Parsed expression to evaluate: ~W~%" code-to-eval)
-          (when in-maxima
+(defun my-eval (code)
+  (apply-overrides)
+  (setq maxima::$__ (third code))
+  (let ((result (maxima::meval* code)))
+    (setq maxima::$_ maxima::$__)
+    result))
+
+
+(defmethod jupyter:evaluate-form ((kernel kernel) stream source-path breakpoints &optional line column)
+  (cond
+    ((kernel-in-maxima kernel)
+      (when (and source-path line)
+        (dolist (instream maxima::*stream-alist*)
+          (when (equal (maxima::instream-stream-name instream) (namestring source-path))
+            (setf (maxima::instream-line instream) (1- line)))))
+      (let ((form (my-mread stream)))
+        (unless (eq form :eof)
+          (let ((in-label (maxima::makelabel maxima::$inchar))
+                (out-label (maxima::makelabel maxima::$outchar)))
+            (jupyter:inform :info kernel "Parsed expression to evaluate: ~W~%" form)
             (incf maxima::$linenum)
             (setf maxima::*step-next* nil
                   maxima::*break-step* nil)
-            (let ((label (maxima::makelabel maxima::$inchar)))
-              (unless maxima::$nolabels
-                (setf (symbol-value label) (third code-to-eval)))))
-          (let ((result (if in-maxima
-                          (my-eval code-to-eval)
-                          (eval code-to-eval))))
-            (jupyter:inform :info kernel "Evaluated result: ~W~%" result)
-            (when (and in-maxima (not (keyword-result-p result)))
-              (setq maxima::$% (caddr result)))
-            result))))))
-
-
-(defun repl (code source-path breakpoints)
-  (with-open-file (input source-path)
-    (maxima::get-instream input)
-    (let ((maxima::$load_pathname (when source-path (namestring source-path)))
-          (maxima::*alt-display1d* #'my-displa)
-          (maxima::*alt-display2d* #'my-displa)
-          (maxima::*prompt-prefix* (jupyter:kernel-prompt-prefix jupyter:*kernel*))
-          (maxima::*prompt-suffix* (jupyter:kernel-prompt-suffix jupyter:*kernel*))
-          (maxima::$stdin *query-io*)
-          (maxima::$stderr *error-output*)
-          (maxima::$stdout *standard-output*))
-      (prog (result in-maxima label value)
-       repeat
-        (setf in-maxima (kernel-in-maxima jupyter:*kernel*)
-              result (read-and-eval jupyter:*kernel* input in-maxima))
-        (cond
-          ((eq result :eof)
-            (return))
-          ((not in-maxima)
-            (jupyter:execute-result result))
-          ((lisp-result-p result)
-            (jupyter:execute-result (second result)))
-          ((not (displayinput-result-p result)))
-          ((eq (third result) 'maxima::maxima-error)
-            (return (values "maxima-error" (second maxima::$error))))
-          (t
-            (setf label (maxima::makelabel maxima::$outchar)
-                  value `((maxima::mlabel) ,label ,(third result)))
             (unless maxima::$nolabels
-              (setf (symbol-value label) (third result)))
-            (jupyter:execute-result
-              (jupyter:make-mime-bundle
-                (list :object-plist
-                      *plain-text-mime-type* (mexpr-to-text value)
-                      *latex-mime-type* (mexpr-to-latex value)
-                      *maxima-mime-type* (mexpr-to-maxima value))))))
-        (go repeat)))))
+              (setf (symbol-value in-label) (third form)))
+            (let ((result (my-eval form)))
+              (jupyter:inform :info kernel "Evaluated result: ~W~%" result)
+              (unless (keyword-result-p result)
+                (setq maxima::$% (caddr result)))
+              (when (displayinput-result-p result)
+                (let ((value `((maxima::mlabel) ,out-label ,(third result))))
+                  (unless maxima::$nolabels
+                    (setf (symbol-value out-label) (third result)))
+                  (jupyter:execute-result
+                    (jupyter:make-mime-bundle
+                      (list :object-plist
+                            *plain-text-mime-type* (mexpr-to-text value)
+                            *latex-mime-type* (mexpr-to-latex value)
+                            *maxima-mime-type* (mexpr-to-maxima value))))))))
+          t)))
+    (t
+      (call-next-method))))
 
 
-(defmethod jupyter:evaluate-code ((k kernel) code &optional source-path breakpoints)
-  (maxima::$debugmode (jupyter:kernel-debugger-started k))
-  (if (jupyter:kernel-debugger-started k)
-    (restart-bind
-        ((abort
-           (lambda ()
-             (return-from jupyter:evaluate-code (values "ABORT" "Cell execution halted." nil)))
-           :report-function (lambda (stream)
-                              (write-string +abort-report+ stream))))
-      (repl code source-path breakpoints))
-    (jupyter:handling-errors (repl code source-path breakpoints))))
+(defmethod jupyter:evaluate-code :around ((k kernel) code &optional source-path breakpoints)
+  (multiple-value-bind (ename evalue traceback)
+                       (catch 'maxima::macsyma-quit
+                         (maxima::$debugmode (jupyter:kernel-debugger-started k))
+                         (let ((maxima::$load_pathname (when source-path (namestring source-path)))
+                               (maxima::*alt-display1d* #'my-displa)
+                               (maxima::*alt-display2d* #'my-displa)
+                               (maxima::*prompt-prefix* (jupyter:kernel-prompt-prefix jupyter:*kernel*))
+                               (maxima::*prompt-suffix* (jupyter:kernel-prompt-suffix jupyter:*kernel*))
+                               (maxima::$stdin *query-io*)
+                               (maxima::$stderr *error-output*)
+                               (maxima::$stdout *standard-output*))
+                           (call-next-method)))
+    (if (equal ename 'maxima::maxima-error)
+      (values "MAXIMA-ERROR" (second maxima::$error) nil)
+      (values ename evalue traceback))))
 
 
 (defmethod jupyter:debug-continue ((k kernel) environment &optional restart-number)
@@ -209,6 +172,7 @@
            (eq (car expr) 'maxima::to-maxima)
            (some #'state-change-p expr))))
 
+
 (defmethod jupyter:code-is-complete ((k kernel) code)
   (handler-case
     (iter
@@ -220,7 +184,7 @@
         (apply-overrides))
       (for char = (peek-char nil input nil))
       (while char)
-      (for parsed = (if in-maxima (maxima::dbm-read input nil) (my-lread input)))
+      (for parsed = (if in-maxima (maxima::mread input nil) (my-lread input)))
       (when (state-change-p parsed)
         (leave +status-unknown+))
       (finally (return +status-complete+)))
@@ -238,13 +202,14 @@
     (simple-error ()
       +status-invalid+)))
 
+
 (defun to-lisp ()
   (setf (kernel-in-maxima jupyter:*kernel*) nil)
-  (throw 'state-change :no-output))
+  :no-output)
 
 (defun to-maxima ()
   (setf (kernel-in-maxima jupyter:*kernel*) t)
-  (throw 'state-change :no-output))
+  (values))
 
 (defun my-displa (form)
   (if (mtext-result-p form)
@@ -408,7 +373,6 @@
   (dotimes (i (length maxima::*break-points*))
     (multiple-value-bind (matches active)
                          (breakpoint-match-p source breakpoint i)
-      (j:inform :info kernel "~a ~A~%" matches active)
       (when (and matches active)
         (deactivate-breakpoint i)))))
 
@@ -427,8 +391,7 @@
                            (maxima::make-bkpt :form form-info
                                               :file-line line
                                               :file path
-                                              :function (fourth line-info)))
-                         (j:inform :info nil "~a ~a" path line)))))
+                                              :function (fourth line-info)))))))
              info)))))
 
 
