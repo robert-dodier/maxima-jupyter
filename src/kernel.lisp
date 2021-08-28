@@ -157,12 +157,18 @@
     (call-next-method)))
 
 
-(defmethod jupyter:debug-evaluate ((kernel kernel) environment code frame)
+(defmethod jupyter:debug-evaluate-form ((kernel kernel) environment stream frame context)
   (if (kernel-in-maxima kernel)
-    (make-debug-variable "EVAL"
-                         (my-eval (with-input-from-string (stream code)
-                                    (my-mread stream)))
-                         environment)
+    (let ((form (my-mread stream)))
+      (unless (eq form :eof)
+        (let ((result (maxima::meval* form)))
+          (when (displayinput-result-p result)
+            (jupyter:display
+              (jupyter:make-mime-bundle
+                (list :object-plist
+                      *plain-text-mime-type* (mexpr-to-text (third result))
+                      *latex-mime-type* (mexpr-to-latex (third result))
+                      *maxima-mime-type* (mexpr-to-maxima (third result)))))))))
     (call-next-method)))
 
 
