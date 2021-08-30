@@ -298,24 +298,24 @@ $print is overridden so that math is displayed inline.
          (*diff-mspeclist* nil))
     (unwind-protect
         (restart-bind
-          ((cl:continue
+          ((maxima-jupyter::step-continue
              (lambda ()
                (return-from break-dbm-loop :resume))
              :report-function (lambda (stream)
-                                (write-string "Continue evaluation" stream)))
-           (maxima-jupyter::next
+                                (write-string "Continue normal execution" stream)))
+           (maxima-jupyter::step-next
              (lambda ()
                (step-next)
                (return-from break-dbm-loop :resume))
              :report-function (lambda (stream)
                                 (write-string "Step next" stream)))
-           (maxima-jupyter::into
+           (maxima-jupyter::step-into
              (lambda ()
                (step-into)
                (return-from break-dbm-loop :resume))
              :report-function (lambda (stream)
                                 (write-string "Step into" stream))))
-          (let ((environment (make-instance 'jupyter:debug-environment
+          (let ((environment (make-instance 'jupyter/common-lisp:debug-environment
                                             :condition nil
                                             :restarts (compute-restarts)
                                             :frames (maxima-jupyter::calculate-debug-frames))))

@@ -142,18 +142,24 @@
     (restart-number
       (invoke-restart-interactively (elt (jupyter:debug-environment-restarts environment) restart-number)))
     (t
-      (invoke-restart 'continue))))
+      (invoke-restart 'step-continue))))
 
 
 (defmethod jupyter:debug-next ((k kernel) environment)
   (if (kernel-in-maxima k)
-    (invoke-restart 'next)
+    (invoke-restart 'step-next)
     (call-next-method)))
 
 
 (defmethod jupyter:debug-in ((k kernel) environment)
   (if (kernel-in-maxima k)
-    (invoke-restart 'into)
+    (invoke-restart 'step-into)
+    (call-next-method)))
+
+
+(defmethod jupyter:debug-out ((k kernel) environment)
+  (if (kernel-in-maxima k)
+    (error "No step out")
     (call-next-method)))
 
 
