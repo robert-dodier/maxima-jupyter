@@ -81,7 +81,7 @@ to send the code to the client.
         for expr = (dbm-read in-stream nil) then (dbm-read in-stream nil)
         while expr
         do
-        (jupyter:enqueue-input maxima-jupyter::*kernel*
+        (jupyter:enqueue-input jupyter:*kernel*
           (with-output-to-string (f)
             (mgrind (third expr) f)
             (write-char (if (eql (caar expr) 'displayinput) #\; #\$) f)))))
@@ -286,3 +286,45 @@ $print is overridden so that math is displayed inline.
                         args))
     :display t)
   (car (last args)))
+
+
+(defun break-dbm-loop (at)
+  (let* ((*quit-tags* (cons (cons *break-level* *quit-tag*) *quit-tags*))
+         (*break-level* (if (not at) *break-level* (cons t *break-level*)))
+         (*quit-tag* (cons nil nil))
+         (*break-env* *break-env*)
+         (*mread-prompt* "")
+         (*diff-bindlist* nil)
+         (*diff-mspeclist* nil))
+    (unwind-protect
+        (restart-bind
+          ((maxima-jupyter::step-continue
+             (lambda ()
+               (return-from break-dbm-loop :resume))
+             :report-function (lambda (stream)
+                                (write-string "Continue normal execution" stream)))
+           (maxima-jupyter::step-next
+             (lambda ()
+               (step-next)
+               (return-from break-dbm-loop :resume))
+             :report-function (lambda (stream)
+                                (write-string "Step next" stream)))
+           (maxima-jupyter::step-into
+             (lambda ()
+               (step-into)
+               (return-from break-dbm-loop :resume))
+             :report-function (lambda (stream)
+                                (write-string "Step into" stream))))
+          (let ((environment (make-instance 'jupyter/common-lisp:debug-environment
+                                            :condition nil
+                                            :restarts (compute-restarts)
+                                            :frames (maxima-jupyter::calculate-debug-frames))))
+            (unless at
+              (break-frame 0 nil))
+            (jupyter:debug-stop "exception" environment)))
+      (restore-bindings)))
+  :resume)
+
+
+(defun mbreak-loop ()
+  (break-dbm-loop nil))

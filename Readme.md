@@ -13,13 +13,12 @@ clicking on the Binder badge above.
 ## Examples
 
 - [MaximaJupyterExample.ipynb][] &mdash; General usage of Maxima from within
-  Jupyter Notebook.
+  JupyterLab.
 
 - [MaximaJupyterTalk.ipynb][] &mdash; My notes for a talk given to the Portland
   Python User Group.
 
-- [Plots.ipynb][] &mdash; Usage of plotting facilities from within Jupyter
-  Notebook.
+- [Plots.ipynb][] &mdash; Usage of plotting facilities from within JupyterLab.
 
 These examples make use of [nbviewer][].
 You can submit a link to your own notebook to tell nbviewer to render it.
@@ -50,9 +49,10 @@ To try Maxima-Jupyter you need :
 
      - Other implementations which support the Bordeaux Threads package
        might work. The [Bordeaux Threads project description][] says
-       "Supports all major Common Lisp implementations: SBCL, CCL, Lispworks, Allegro, ABCL, ECL, Clisp."
-       Aside from SBCL and CCL (i.e. Clozure CL) which are known to work,
-       the others in that list are untested with maxima-jupyter.
+       "Supports all major Common Lisp implementations: SBCL, CCL, Lispworks, 
+       Allegro, ABCL, ECL, Clisp." Aside from SBCL and CCL (i.e. Clozure CL) 
+       which are known to work, the others in that list are untested with 
+       maxima-jupyter.
 
      - Note also that ECL might theoretically work, since it is supported
        by Bordeaux Threads. However, nobody (neither Maxima-Jupyter 
@@ -77,7 +77,7 @@ To try Maxima-Jupyter you need :
 
  - Python 3.2 or above
 
- - Jupyter, or IPython 3.x
+ - [JupyterLab][]
 
  - If the build aborts because the file `zmq.h` is missing, you may need to
    install the development files for the high-level C binding for ZeroMQ.
@@ -86,13 +86,19 @@ To try Maxima-Jupyter you need :
 
 ### Installing Maxima-Jupyter
 
-The following installation methods are still relatively new. If you experience
-any issues than please use the "Old Methods" detailed later in the document.
-
 First you must install Jupyter, then you can install Maxima-Jupyter. If you
 plan on using JupyterLab then you must install with the `--user` option.
 
-     python3 -m pip --user install jupyter jupyterlab
+```
+python3 -m pip --user install jupyterlab jupyter-console
+```
+
+If you are using Windows then installation via conda is recomended since this
+will also install the ZeroMQ libraries.
+
+```
+conda install -c conda-forge jupyterlab jupyter_console m2w64-gcc m2w64-zeromq
+```
 
 Once Jupyter is installed you can either install from the source files of this
 repository, or you can install via the AUR if you are using Arch Linux.
@@ -145,84 +151,6 @@ makepkg -Csri
 Please consult the [Arch Wiki][] for more information regarding installing
 packages from the AUR.
 
-### Installing Maxima-Jupyter (Old Method)
-
-First you must install Jupyter, then you can install Maxima-Jupyter.
-
-I installed Jupyter via:
-
-     python3 -m pip install jupyter
-
-For Maxima-Jupyter, there are two kernel installation methods.
-In both methods, the effect of the installation command is to create a file
-named `kernel.json` which tells Jupyter where to find Maxima-Jupyter.
-Note that Maxima-Jupyter installation DOES NOT copy any Maxima-Jupyter files;
-it only creates `kernel.json` which points to the location of Maxima-Jupyter
-in your file system.
-
-With the `--user` option in Method 1 or Method 2,
-the `kernel.json` file is created in a directory somewhere under your home directory.
-Otherwise, `kernel.json` is created in a system directory.
-You might need superuser privilege (via `sudo` for example) to execute a system installation,
-if the directory into which `kernel.json` is copied is not user-writable.
-
-Note that `jupyter --paths` lists file system paths used by Jupyter;
-kernels are sought in the paths under `data`.
-Also, `jupyter kernelspec list` tells the kernels which are known to Jupyter.
-
-For the record, on my system, a system installation copies `kernel.json`
-into `/usr/local/share/jupyter/kernels/maxima/kernel.json`
-and a user installation copies `kernel.json`
-into `/home/robert/.local/share/jupyter/kernels/maxima/kernel.json`.
-
-#### Method 1. Maxima-Jupyter binary executable installation (Old Method)
-
-The first installation method is to create a binary executable image,
-as detailed in [make-maxima-jupyter-recipe.txt][].
-After creating that image, execute one of these two commands to tell Jupyter about it.
-
-For a system installation,
-
-```sh
-python3 ./install-maxima-jupyter.py --exec=path/to/maxima-jupyter-image
-```
-
-For a user installation,
-
-```sh
-python3 ./install-maxima-jupyter.py --exec=path/to/maxima-jupyter-image --user
-```
-
-#### Method 2. Maxima-Jupyter loadable source installation (Old Method)
-
-The second installation method executes Maxima and then loads Maxima-Jupyter into Maxima.
-The advantange to this method is that the normal initialization behavior of Maxima,
-such as loading `maxima-init.mac`, is preserved.
-
-Note that in order for this method to work, Quicklisp needs be loaded by default
-in every Maxima session. See Quicklisp documentation for details.
-
-For a system installation,
-
-```sh
-python3 ./install-maxima-jupyter.py --root=`pwd`
-```
-
-where the shell command `pwd` emits the current working directory
-(which must be the Maxima-Jupyter top-level directory,
-since it contains `install-maxima-jupyter.py`).
-
-For a user installation,
-
-```sh
-python3 ./install-maxima-jupyter.py --root=`pwd` --user
-```
-
-The option `--maxima` may also be used to specify the location of the Maxima executable.
-If not specified, the command which launches Maxima is just `maxima`,
-therefore the first instance of `maxima` in the PATH environment variable
-is the one which is executed.
-
 ### Code Highlighting Installation
 
 Highlighting Maxima code is handled by CodeMirror in the notebook
@@ -244,13 +172,13 @@ pretty painful too.
 Maxima-Jupyter may be run from a local installation in console mode by the following.
 
 ```sh
-jupyter console --kernel=maxima
+jupyter-console --kernel=maxima
 ```
 
 Notebook mode is initiated by the following.
 
 ```sh
-jupyter notebook
+jupyter-lab
 ```
 
 When you enter stuff to be evaluated, you must include the usual trailing
@@ -267,7 +195,7 @@ In [2]:
 
 Maxima-Jupyter may be run as a Docker image managed by repo2docker which will
 fetch the current code from GitHub and handle all the details of running the
-Jupyter Notebook server.
+JupyterLab server.
 
 First you need to install repo2docker (`sudo` may be required)
 
@@ -352,6 +280,7 @@ robert-dodier @ github
 [Bordeaux Threads project description]: https://common-lisp.net/project/bordeaux-threads/
 [bug report]: https://github.com/jupyter/notebook/issues/1962
 [codemirror-mode-meta-patch]: https://github.com/robert-dodier/maxima-jupyter/blob/master/codemirror-mode-meta-patch
+[JupyterLab]: https://jupyter.org/install.html
 [make-maxima-jupyter-recipe.txt]: https://github.com/robert-dodier/maxima-jupyter/blob/master/make-maxima-jupyter-recipe.txt
 [maxima_lexer.py]: https://github.com/robert-dodier/maxima-jupyter/blob/master/maxima_lexer.py
 [maxima-jupyter-git]: https://aur.archlinux.org/packages/maxima-jupyter-git/
