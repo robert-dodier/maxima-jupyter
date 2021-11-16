@@ -281,7 +281,6 @@ robert-dodier @ github
 [bug report]: https://github.com/jupyter/notebook/issues/1962
 [codemirror-mode-meta-patch]: https://github.com/robert-dodier/maxima-jupyter/blob/master/codemirror-mode-meta-patch
 [JupyterLab]: https://jupyter.org/install.html
-[make-maxima-jupyter-recipe.txt]: https://github.com/robert-dodier/maxima-jupyter/blob/master/make-maxima-jupyter-recipe.txt
 [maxima_lexer.py]: https://github.com/robert-dodier/maxima-jupyter/blob/master/maxima_lexer.py
 [maxima-jupyter-git]: https://aur.archlinux.org/packages/maxima-jupyter-git/
 [maxima.js]: https://github.com/robert-dodier/maxima-jupyter/blob/master/maxima.js
