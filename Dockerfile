@@ -38,16 +38,9 @@ COPY . ${HOME}/maxima-jupyter
 
 RUN chown -R ${NB_UID} ${HOME} && chgrp -R ${NB_USER} ${HOME}
 
-RUN export PYTHON_SITE=$(python -c 'import site; print(site.getsitepackages()[0])') && \
-    cp maxima_lexer.py ${PYTHON_SITE}/pygments/lexers/ && \
-    patch ${PYTHON_SITE}/pygments/lexers/_mapping.py pygments-mapping-patch
-
 USER ${NB_USER}
 
-RUN mkdir -p ${JUPYTERLAB_DIR}/staging/node_modules/codemirror/mode/maxima/ && \
-    cp maxima.js ${JUPYTERLAB_DIR}/staging/node_modules/codemirror/mode/maxima/ && \
-    patch ${JUPYTERLAB_DIR}/staging/node_modules/codemirror/mode/meta.js codemirror-mode-meta-patch && \
-    jupyter lab build && \
+RUN jupyter lab build && \
     maxima --batch-string="load(\"load-maxima-jupyter.lisp\");jupyter_install();"
 
 WORKDIR ${HOME}/maxima-jupyter/examples
