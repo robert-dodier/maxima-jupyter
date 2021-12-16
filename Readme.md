@@ -4,7 +4,8 @@
 
 An enhanced interactive environment for the computer algebra system Maxima,
 based on CL-Jupyter, a Jupyter kernel for Common Lisp, by Frederic Peschanski.
-Thanks, Frederic!
+Thanks, Frederic! These days Maxima-Jupyter depends heavily on Common-Lisp-Jupyter,
+by Tarn Burton. Thanks, Tarn!
 
 This file describes the installation and usage of Maxima-Jupyter on a local
 machine, but you can try out Maxima-Jupyter without installing anything by
@@ -22,11 +23,6 @@ clicking on the Binder badge above.
 
 These examples make use of [nbviewer][].
 You can submit a link to your own notebook to tell nbviewer to render it.
-
-Note that the Github notebook renderer (i.e., what you see if you click on a
-notebook file in the Github file browser) is currently (November 2018) somewhat
-suboptimal ([bug report][]); it renders math as plain text, not as typeset
-formulas.
 
 ## Installation
 
@@ -153,19 +149,16 @@ packages from the AUR.
 
 ### Code Highlighting Installation
 
-Highlighting Maxima code is handled by CodeMirror in the notebook
-and Pygments in HTML export.
+Highlighting Maxima code is handled by [CodeMirror][] in the notebook
+and [Pygments][] in HTML export.
 
-The CodeMirror mode for Maxima is [maxima.js][]. To install it, find the
-CodeMirror mode installation directory, create a directory named `maxima` there,
-copy [maxima.js][] to the `maxima` directory, and update
-`codemirror/mode/meta.js` as shown in [codemirror-mode-meta-patch][]. Yes, this
-is pretty painful, sorry about that.
+A [codemirror-mode-maxima][CodeMirror mode for Maxima] has been published on [npmjs.com][].
+It is not clear how that needs to be installed in order for Maxima-Jupyter to make use of it;
+stay tuned for further info.
 
-The Pygments lexer for Maxima is maxima_lexer.py. To install it, find the
-Pygments installation directory, copy [maxima_lexer.py][] to the `lexers` directory, and
-update `lexers/_mapping.py` as shown in [pygments-mapping-patch][]. Yes, this is
-pretty painful too.
+A Maxima lexer for Pygments has been submitted and accepted by the Pygments project,
+and it will be bundled with the next release of Pygments (2.11).
+In the meantime, we are lacking highlighting in HTML export.
 
 ### Running Maxima-Jupyter
 
@@ -268,28 +261,23 @@ here (taken from the Maxima tutorial):
 
 ----
 
-Have fun and keep me posted. Feel free to send pull requests, comments, etc.
-
-Robert Dodier
-robert.dodier@gmail.com
-robert-dodier @ github
+Have fun! If you run into problems, please open a ticket on the issue tracker for this project.
 
 <!--refs-->
 
 [Arch Wiki]: https://wiki.archlinux.org/index.php/Arch_User_Repository#Installing_packages
 [Bordeaux Threads project description]: https://common-lisp.net/project/bordeaux-threads/
-[bug report]: https://github.com/jupyter/notebook/issues/1962
-[codemirror-mode-meta-patch]: https://github.com/robert-dodier/maxima-jupyter/blob/master/codemirror-mode-meta-patch
+[CodeMirror]: https://codemirror.net 
+[npmjs.com]: https://www.npmjs.com
+[codemirror-mode-maxima]: https://www.npmjs.com/package/codemirror-mode-maxima
+[Pygments]: https://pygments.org
 [JupyterLab]: https://jupyter.org/install.html
-[maxima_lexer.py]: https://github.com/robert-dodier/maxima-jupyter/blob/master/maxima_lexer.py
 [maxima-jupyter-git]: https://aur.archlinux.org/packages/maxima-jupyter-git/
-[maxima.js]: https://github.com/robert-dodier/maxima-jupyter/blob/master/maxima.js
 [MaximaJupyterExample.ipynb]: http://nbviewer.jupyter.org/github/robert-dodier/maxima-jupyter/blob/master/examples/MaximaJupyterExample.ipynb
 [MaximaJupyterTalk.ipynb]: http://nbviewer.jupyter.org/github/robert-dodier/maxima-jupyter/blob/master/examples/MaximaJupyterTalk.ipynb
 [mybinder-badge]: https://mybinder.org/badge_logo.svg
 [mybinder]: https://mybinder.org/v2/gh/robert-dodier/maxima-jupyter/master?urlpath=lab
 [nbviewer]: http://nbviewer.jupyter.org
 [Plots.ipynb]: http://nbviewer.jupyter.org/github/robert-dodier/maxima-jupyter/blob/master/examples/Plots.ipynb
-[pygments-mapping-patch]: https://github.com/robert-dodier/maxima-jupyter/blob/master/pygments-mapping-patch
 [Quicklisp]: http://www.quicklisp.org
 [repo2docker]: https://repo2docker.readthedocs.io/en/latest/
