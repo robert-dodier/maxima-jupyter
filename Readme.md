@@ -152,7 +152,7 @@ packages from the AUR.
 Highlighting Maxima code is handled by [CodeMirror][] in the notebook
 and [Pygments][] in HTML export.
 
-A [codemirror-mode-maxima][CodeMirror mode for Maxima] has been published on [npmjs.com][].
+A [CodeMirror mode for Maxima][] has been published on [npmjs.com][].
 It is not clear how that needs to be installed in order for Maxima-Jupyter to make use of it;
 stay tuned for further info.
 
@@ -269,7 +269,7 @@ Have fun! If you run into problems, please open a ticket on the issue tracker fo
 [Bordeaux Threads project description]: https://common-lisp.net/project/bordeaux-threads/
 [CodeMirror]: https://codemirror.net 
 [npmjs.com]: https://www.npmjs.com
-[codemirror-mode-maxima]: https://www.npmjs.com/package/codemirror-mode-maxima
+[CodeMirror mode for Maxima]: https://www.npmjs.com/package/codemirror-mode-maxima
 [Pygments]: https://pygments.org
 [JupyterLab]: https://jupyter.org/install.html
 [maxima-jupyter-git]: https://aur.archlinux.org/packages/maxima-jupyter-git/
