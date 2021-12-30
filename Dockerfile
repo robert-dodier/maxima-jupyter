@@ -16,7 +16,7 @@ RUN patched_glibc=glibc-linux4-2.33-4-x86_64.pkg.tar.zst && \
     bsdtar -C / -xvf "$patched_glibc"
 
 RUN pacman -Syu --noconfirm --needed base-devel lib32-zeromq git \
-      npm jupyterlab jupyter_console sbcl maxima; \
+      npm jupyterlab jupyter_console sbcl gnuplot maxima; \
     useradd --create-home --shell=/bin/false --uid=${NB_UID} ${NB_USER}
 
 WORKDIR ${HOME}
