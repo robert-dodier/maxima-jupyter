@@ -20,8 +20,8 @@ Standard MIME types
 (defun displayinput-result-p (code)
   (and (listp code)
        (listp (car code))
-       (eq (caar code) 'maxima::displayinput))
-       (not (eq :no-output (third code))))
+       (eq (caar code) 'maxima::displayinput)
+       (not (eq :no-output (third code)))))
 
 
 (defun mtext-result-p (code)
