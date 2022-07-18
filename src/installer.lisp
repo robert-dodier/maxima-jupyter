@@ -32,6 +32,9 @@
 	     (jupyter:installer-path instance :local-projects)))
     "--batch-string=jupyter_kernel_start(\"{connection_file}\")$"))
 
+(defmethod jupyter:command-line :before ((instance user-image-installer))
+	   (ensure-directories-exist (jupyter:installer-path instance :program)))
+
 (defmethod jupyter:command-line ((instance system-installer))
   (list
     (jupyter:installer-implementation instance)
