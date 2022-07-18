@@ -25,10 +25,11 @@
     (jupyter:installer-implementation instance)
     "--very-quiet"
     (format nil "--preload-lisp=~A"
-      (jupyter:installer-path instance :root :program :local-projects
-        (make-pathname :directory '(:relative "maxima-jupyter")
+	    (merge-pathnames 
+	     (make-pathname :directory '(:relative "maxima-jupyter")
                        :name "load-maxima-jupyter"
-                       :type "lisp")))
+                       :type "lisp")
+	     (jupyter:installer-path instance :local-projects)))
     "--batch-string=jupyter_kernel_start(\"{connection_file}\")$"))
 
 (defmethod jupyter:command-line ((instance system-installer))
