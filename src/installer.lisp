@@ -17,7 +17,7 @@
 (defclass user-image-installer (jupyter:user-image-installer maxima-installer)
   ())
 
-(defclass system-installer (jupyter:system-installer maxima-installer)
+(defclass system-installer (jupyter:system-bundle-installer maxima-installer)
   ())
 
 (defmethod jupyter:command-line ((instance user-installer))
@@ -25,21 +25,30 @@
     (jupyter:installer-implementation instance)
     "--very-quiet"
     (format nil "--preload-lisp=~A"
-      (jupyter:installer-path instance :root :program :local-projects
-        (make-pathname :directory '(:relative "maxima-jupyter")
+	    (merge-pathnames 
+	     (make-pathname :directory '(:relative "maxima-jupyter")
                        :name "load-maxima-jupyter"
-                       :type "lisp")))
+                       :type "lisp")
+	     (jupyter:installer-path instance :local-projects)))
     "--batch-string=jupyter_kernel_start(\"{connection_file}\")$"))
 
+(defmethod jupyter:command-line :before ((instance user-image-installer))
+	   (ensure-directories-exist (jupyter:installer-path instance :program)))
+
 (defmethod jupyter:command-line ((instance system-installer))
-  (list
-    (jupyter:installer-implementation instance)
-    "--very-quiet"
-    (format nil "--preload-lisp=~A"
-      (jupyter:installer-path instance :root :program :bundle))
-    (format nil "--preload-lisp=~A"
-      (jupyter:installer-path instance :root :program :local-projects
-        (make-pathname :directory '(:relative "maxima-jupyter")
-                       :name "load-maxima-jupyter"
-                       :type "lisp")))
-    "--batch-string=jupyter_kernel_start(\"{connection_file}\")$"))
+  (let ((prefix (jupyter:installer-prefix instance)))
+    (setf (jupyter:installer-prefix instance) nil)
+    (unwind-protect
+	 (list
+	  (jupyter:installer-implementation instance)
+	  "--very-quiet"
+	  (format nil "--preload-lisp=~A"
+		  (jupyter:installer-path instance :bundle))
+	  (format nil "--preload-lisp=~A"
+		  (merge-pathnames 
+		   (make-pathname :directory '(:relative "maxima-jupyter")
+				  :name "load-maxima-jupyter"
+				  :type "lisp")
+		   (jupyter:installer-path instance :local-projects)))
+	  "--batch-string=jupyter_kernel_start(\"{connection_file}\")$")
+      (setf (jupyter:installer-prefix instance) prefix))))
