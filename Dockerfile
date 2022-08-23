@@ -11,13 +11,12 @@ ENV PATH "${HOME}/.local/bin:${PATH}"
 
 RUN echo -e "[multilib]\nInclude = /etc/pacman.d/mirrorlist" >> /etc/pacman.conf
 
-RUN patched_glibc=glibc-linux4-2.33-4-x86_64.pkg.tar.zst && \
-    curl -LO "https://repo.archlinuxcn.org/x86_64/$patched_glibc" && \
-    bsdtar -C / -xvf "$patched_glibc"
 
 RUN pacman -Syu --noconfirm --needed base-devel lib32-zeromq git \
-      npm jupyterlab jupyter_console sbcl gnuplot maxima; \
-    useradd --create-home --shell=/bin/false --uid=${NB_UID} ${NB_USER}
+      npm jupyterlab jupyter_console
+
+RUN pacman -Syu --noconfirm --needed sbcl gnuplot maxima maxima-sbcl
+RUN useradd --create-home --shell=/bin/false --uid=${NB_UID} ${NB_USER}
 
 WORKDIR ${HOME}
 
@@ -40,8 +39,9 @@ RUN chown -R ${NB_UID} ${HOME} && chgrp -R ${NB_USER} ${HOME}
 
 USER ${NB_USER}
 
-RUN jupyter lab build && \
-    maxima --batch-string="load(\"load-maxima-jupyter.lisp\");jupyter_install();"
+RUN jupyter lab build
+
+RUN maxima --batch-string="load(\"load-maxima-jupyter.lisp\");jupyter_install();"
 
 WORKDIR ${HOME}/maxima-jupyter/examples
 
