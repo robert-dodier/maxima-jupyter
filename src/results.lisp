@@ -33,11 +33,9 @@ Standard MIME types
 (defun plot-p (value)
   (and (listp value)
        (eq (caar value) 'maxima::mlist)
-       (eq (list-length value) 3)
+       (eq (list-length value) 2)
        (stringp (second value))
-       (stringp (third value))
-       (or (ends-with-subseq ".gnuplot" (second value))
-           (ends-with-subseq ".gnuplot_pipes" (second value)))))
+       (probe-file (second value))))
 
 
 (defun mexpr-to-text (value)

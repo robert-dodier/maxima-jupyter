@@ -116,7 +116,7 @@ plot is inside of a block.
 (defover $plot2d (orig &rest args)
   (let ((value (apply orig args)))
     (when (maxima-jupyter::plot-p value)
-      (jupyter-file (third value) t))
+      (jupyter-file (second value) t))
     value))
 
 #|
@@ -129,7 +129,7 @@ plot is inside of a block.
 (defover $plot3d (orig &rest args)
   (let ((value (apply orig args)))
     (when (maxima-jupyter::plot-p value)
-      (jupyter-file (third value) t))
+      (jupyter-file (second value) t))
     value))
 
 
@@ -257,7 +257,7 @@ the plot is inside of a block.
 (defover $mandelbrot (orig &rest args)
   (let ((value (apply orig args)))
     (when (maxima-jupyter::plot-p value)
-      (jupyter-file (third value) t))
+      (jupyter-file (second value) t))
     value))
 
 #|
@@ -270,7 +270,7 @@ plot is inside of a block.
 (defover $julia (orig &rest args)
   (let ((value (apply orig args)))
     (when (maxima-jupyter::plot-p value)
-      (jupyter-file (third value) t))
+      (jupyter-file (second value) t))
     value))
 
 #|
