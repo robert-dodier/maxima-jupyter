@@ -83,7 +83,8 @@ To try Maxima-Jupyter you need :
 ### Installing Maxima-Jupyter
 
 First you must install Jupyter, then you can install Maxima-Jupyter. If you
-plan on using JupyterLab then you must install with the `--user` option.
+plan on using JupyterLab (which provides the notebook interface) then you
+must install with the `--user` option.
 
 ```
 python3 -m pip --user install jupyterlab jupyter-console
@@ -118,9 +119,9 @@ The function bug_report() provides bug reporting information.
 After the install script has loaded then install using *one* of the kernel 
 types.
 
-1. User specific Quicklisp kernel: `jupyter_install();`
-2. User specific binary image kernel: `jupyter_install_image();`
-3. System-wide Quicklisp bundled kernel: `jupyter_system_install(true, "pkg/");`
+1. User-specific installation, with kernel loaded by Quicklisp: `jupyter_install();`
+2. User-specific installation, with kernel saved in binary image: `jupyter_install_image();`
+3. System-wide installation, with kernel loaded by Quicklisp: `jupyter_system_install(true, "pkg/");`
 
 After the installation is complete then exit Maxima. For the System-wide
 installation copy the files in `pkg` to the system root, i.e. 
