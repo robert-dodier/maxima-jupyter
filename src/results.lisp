@@ -29,14 +29,13 @@ Standard MIME types
          (listp (car code))
          (eq (caar code) 'maxima::mtext)))
 
-
-(defun plot-p (value)
-  (and (listp value)
-       (eq (caar value) 'maxima::mlist)
-       (eq (list-length value) 2)
-       (stringp (second value))
-       (probe-file (second value))))
-
+(defun display-plot (value)
+  (let ((file (car (last value))))
+    (when (and (listp value)
+               (eq (caar value) 'maxima::mlist)
+               (stringp file)
+               (probe-file file))
+      (maxima::jupyter-file file t))))
 
 (defun mexpr-to-text (value)
   (string-trim '(#\Newline)
