@@ -61,9 +61,18 @@ To try Maxima-Jupyter you need :
 
    - You might or might not need to build Maxima. (A) If you have available
      a Maxima binary package compiled with a compatible Lisp implementation
-     (i.e. SBCL, Clozure CL, Lispworks, etc. as enumerated above),
-     then you do not need to build Maxima. (B) Otherwise, you must install
-     a compatible Lisp implementation and compile Maxima yourself.
+     (i.e. SBCL, Clozure CL, Lispworks, etc. as enumerated above)
+     **and** ASDF is available to the Lisp runtime when Maxima is executed
+     (more on this immediately below), then you do not need to build Maxima.
+     (B) Otherwise, you must install a compatible Lisp implementation
+     and compile Maxima yourself.
+
+   - NOTE about how to determine if ASDF is available to the Lisp runtime.
+     Execute Maxima, and then, at the Maxima input prompt, enter
+     `:lisp (require :asdf)`
+     If that returns T or NIL without an error message, then ASDF is
+     available. If that causes an error about "don't know how to require
+     ASDF" or something like that, then ASDF is not available.
 
  - [Quicklisp][]
 
