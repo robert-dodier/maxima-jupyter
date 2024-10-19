@@ -1,0 +1,43 @@
+FROM debian:bookworm-slim as buildsys
+
+ARG NB_USER=app
+ARG NB_UID=1000
+
+ENV USER ${NB_USER}
+ENV HOME /home/${NB_USER}
+ENV JUPYTER_PATH=${HOME}/.local/share/jupyter/
+ENV JUPYTERLAB_DIR=${HOME}/.local/share/jupyter/lab/
+ENV PATH "${HOME}/.local/bin:${PATH}"
+
+RUN apt-get update && apt-get -q -y install sbcl
+RUN apt-get update && apt-get -q -y install cmake  gcc libtool git autoconf python3 binutils g++ gperf make curl
+
+RUN apt-get update && apt-get -q -y install texinfo
+
+ENV maxima_build tags/5.47.0
+
+RUN git clone https://git.code.sf.net/p/maxima/code maxima-code && \
+    cd maxima-code && \
+    git checkout ${maxima_build}
+
+RUN cd maxima-code && \
+    mkdir dist && \
+    ./bootstrap && \
+    ./configure --enable-sbcl-exec --enable-quiet-build --prefix=`pwd`/dist && \
+    make -s -j 2&& \
+    make install
+
+FROM debian:bookworm-slim
+
+COPY --from=buildsys /maxima-code/dist /maxima 
+
+RUN apt-get update &&  apt-get -q -y install python3-jupyterlab-server
+
+RUN apt-get update &&  apt-get -q -y install sbcl curl
+
+RUN jupyter serverextension enable --user --py jupyterlab; \
+    jupyter labextension install @jupyter-widgets/jupyterlab-manager; \
+    curl -kLO https://beta.quicklisp.org/quicklisp.lisp; \
+    sbcl --non-interactive --load quicklisp.lisp \
+      --eval "(quicklisp-quickstart:install)" \
+      --eval "(ql-util:without-prompting (ql:add-to-init-file))"
