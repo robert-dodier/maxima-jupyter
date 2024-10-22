@@ -79,6 +79,8 @@ ENV SBCL_HOME /usr/lib/sbcl
 
 RUN /maxima/bin/maxima --batch-string="load(\"load-maxima-jupyter.lisp\");jupyter_install();"
 
+# Remove unneeded files (newer docker could use --exclude on copy?)
+RUN rm -rf ${HOME}/.local/share/jupyter/lab/staging
 
 FROM debbase
 
