@@ -1,68 +1,47 @@
 FROM debian:bookworm-slim as debbase
 
-ARG NB_USER=app
-ARG NB_UID=1000
-
-RUN useradd --create-home --shell=/bin/false --uid=${NB_UID} ${NB_USER}
-
-
-ENV USER ${NB_USER}
-ENV HOME /home/${NB_USER}
-ENV JUPYTER_PATH=${HOME}/.local/share/jupyter/
-ENV JUPYTERLAB_DIR=${HOME}/.local/share/jupyter/lab/
-ENV PATH "${HOME}/.local/bin:${PATH}"
-
 RUN apt-get update && apt-get -q -y install sbcl curl
+
+ENV USER=app NB_UID=1000
+ENV HOME=/home/${USER} 
+ENV JUPYTER_PATH=${HOME}/.local/share/jupyter/ JUPYTERLAB_DIR=${HOME}/.local/share/jupyter/lab/ \
+    PATH="${HOME}/.local/bin:${PATH}"
+
+
+RUN useradd --create-home --shell=/bin/false --uid=${NB_UID} ${USER}
+
+
 
 FROM debbase as buildsys
 
-RUN apt-get update && apt-get -q -y install cmake  gcc libtool git autoconf python3 binutils g++ gperf make curl
+RUN apt-get update && apt-get -q -y install cmake gcc libtool git autoconf \
+                                    python3 binutils g++ gperf make curl \
+				    texinfo \
+				    python3-minimal python3-pip \
+				    python3-venv \
+				    libzmq3-dev
 
-RUN apt-get update && apt-get -q -y install texinfo
 
 ENV maxima_build tags/5.47.0
 
 RUN git clone https://git.code.sf.net/p/maxima/code maxima-code && \
     cd maxima-code && \
-    git checkout ${maxima_build}
-
-RUN cd maxima-code && \
+    git checkout ${maxima_build} && \
     mkdir dist && \
     ./bootstrap && \
     ./configure --enable-sbcl-exec --enable-quiet-build --prefix=/maxima && \
-    make -s -j 2&& \
+    make -s -j$(nproc) && \
     make install
 
-RUN apt-get update &&  apt-get -q -y install python3-minimal python3-pip
-
-RUN apt-get update &&  apt-get -q -y install python3-venv
 
 WORKDIR ${HOME}
-USER ${NB_USER}
+USER ${USER}
 
-RUN python3 -m venv jupyterenv
-RUN jupyterenv/bin/pip install   jupyter
-
-
-FROM debbase
-
-ARG NB_USER=app
-ARG NB_UID=1000
+RUN python3 -m venv jupyterenv && \
+    jupyterenv/bin/pip install   jupyter
 
 
-COPY --from=buildsys /maxima /maxima
-COPY --from=buildsys /home/app/jupyterenv /home/app/jupyterenv
-
-RUN apt-get update &&  apt-get -q -y install python3-minimal 
-
-
-WORKDIR ${HOME}
-USER ${NB_USER}
-
-ENV NVM_DIR ${HOME}/nvm
-ENV NODE_VERSION 22
-
-
+ENV NVM_DIR=${HOME}/nvm NODE_VERSION=22
 
 RUN mkdir -p $NVM_DIR &&  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
 
@@ -72,11 +51,6 @@ RUN source $NVM_DIR/nvm.sh \
     && nvm install $NODE_VERSION \
     && nvm alias default $NODE_VERSION \
     && nvm use default
-
-USER root
-# Need cc for zeromq wrapper
-RUN apt-get update && apt-get -q -y install   gcc
-USER ${NB_USER}
 
 RUN source $NVM_DIR/nvm.sh && \
     jupyterenv/bin/jupyter server extension enable --user --py jupyterlab && \
@@ -94,32 +68,35 @@ WORKDIR ${HOME}/maxima-jupyter
 # Use .dockerignore to avoid copying unnecsary files such as ".git" directory
 COPY .  ${HOME}/maxima-jupyter/
 
-RUN chown -R ${NB_UID} ${HOME} && chgrp -R ${NB_USER} ${HOME}
+RUN chown -R ${NB_UID} ${HOME} && chgrp -R ${USER} ${HOME}
 
-RUN apt-get update &&  apt-get -q -y install --no-install-recommends --no-install-suggests libzmq3-dev
-
-# This is just for minimisng the image
-RUN apt-get update &&  apt-get -q -y install ncdu
-
-USER ${NB_USER}
+USER ${USER}
 
 RUN source $NVM_DIR/nvm.sh && ~/jupyterenv/bin/jupyter lab build
 
 # This is needed to find  the sbcl contrib directory for asdf etc
 ENV SBCL_HOME /usr/lib/sbcl
 
-
 RUN /maxima/bin/maxima --batch-string="load(\"load-maxima-jupyter.lisp\");jupyter_install();"
 
-WORKDIR ${HOME}/maxima-jupyter/examples
 
-ENV PATH "${PATH}:/maxima/bin"
+FROM debbase
 
-RUN rm -rf ${HOME}/.local/share/jupyter/lab/staging
-RUN rm -rf $NVM_DIR
-RUN rm -rf ${HOME}/.yarn
-
-USER root
+RUN apt-get update &&  apt-get -q -y install  python3-minimal libzmq3-dev gnuplot-nox
 RUN find /usr -iname "*.a" -delete
 
-USER ${NB_USER}
+USER ${USER}
+
+# Older Docker does not support merging these statements together...
+COPY --from=buildsys /maxima /maxima
+COPY --from=buildsys /home/app/jupyterenv /home/app/jupyterenv
+COPY --from=buildsys /home/app/quicklisp /home/app/quicklisp
+COPY --from=buildsys /home/app/maxima-jupyter /home/app/maxima-jupyter
+COPY --from=buildsys /home/app/.sbclrc /home/app/.sbclrc
+COPY --from=buildsys /home/app/.local /home/app/.local
+COPY --from=buildsys /home/app/.jupyter /home/app/.jupyter
+COPY --from=buildsys /home/app/.cache /home/app/.cache
+
+ENV PATH="${PATH}:/maxima/bin:${HOME}/jupyterenv/bin" SBCL_HOME=/usr/lib/sbcl
+WORKDIR ${HOME}/maxima-jupyter/examples
+
