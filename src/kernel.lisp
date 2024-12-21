@@ -245,34 +245,33 @@
 
 
 (defmethod jupyter:complete-code ((k kernel) ms code cursor-pos)
-  (if (kernel-in-maxima k)
-    (jupyter:handling-errors
-      (multiple-value-bind (word start end) (symbol-string-at-position code cursor-pos)
-        (when word
-          (let ((name (concatenate 'string "$" (maxima::maybe-invert-string-case word))))
-            (with-slots (package) k
-              (iter
-                (for sym in-package package)
-                (for sym-name next (symbol-name sym))
-                (when (starts-with-subseq name sym-name)
-                  (jupyter:match-set-add ms (maxima::print-invert-case (maxima::stripdollar sym-name))
-                                            start end
-                                            :type (if (fboundp sym) "function" "variable"))))))))
-      (values))
-    (call-next-method)))
+  (cond ((kernel-in-maxima k)
+         (multiple-value-bind (word start end) (symbol-string-at-position code cursor-pos)
+           (when word
+             (let ((name (concatenate 'string "$" (maxima::maybe-invert-string-case word))))
+               (with-slots (package) k
+                 (iter
+                  (for sym in-package package)
+                  (for sym-name next (symbol-name sym))
+                  (when (starts-with-subseq name sym-name)
+                    (jupyter:match-set-add ms (maxima::print-invert-case (maxima::stripdollar sym-name))
+                                           start end
+                                           :type (if (fboundp sym) "function" "variable"))))))))
+         (values))
+        (t
+         (call-next-method))))
 
 
 (defmethod jupyter:inspect-code ((k kernel) code cursor-pos detail-level)
   (declare (ignore detail-level))
   (if (kernel-in-maxima k)
-    (jupyter:handling-errors
       (multiple-value-bind (word start end) (symbol-string-at-position code cursor-pos)
         (when word
           (jupyter:inform :info k "Inspect ~A~%" word)
           (jupyter:text (string-trim '(#\Newline)
                                      (with-output-to-string (*standard-output*)
-                                       (cl-info::info-exact word)))))))
-    (call-next-method)))
+                                       (cl-info::info-exact word))))))
+      (call-next-method)))
 
 
 (defclass debug-frame (jupyter:debug-frame)
