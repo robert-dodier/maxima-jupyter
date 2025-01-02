@@ -91,29 +91,126 @@ To try Maxima-Jupyter you need :
 
 ### Installing Maxima-Jupyter
 
-First you must install Jupyter, then you can install Maxima-Jupyter. If you
-plan on using JupyterLab (which provides the notebook interface) then you
+#### Installing Maxima-Jupyter on MS Windows
+
+Here is one recipe for pulling everything together for MS Windows.
+There are other ways to achieve the same end;
+this is one way which is known to work.
+
+1. Install Maxima and Gnuplot.
+
+   My advice is to install Maxima from an executable installer, which also includes Gnuplot.
+   Obtain an installer from the [Maxima project download page for Windows][].
+
+1. Update `Path` to include the folders which contain `maxima.bat` and `gnuplot.exe`.
+
+   To edit the environment variable `Path`,
+   click the "Start" button and enter "environment variables" in the search box,
+   then select "System Properties" from the search results.
+   Click "Environment Variables" in the "System Properties" popup window.
+   Then select "Path" in the list of variables, and click "Edit...".
+
+   I added the following folders to `Path`, in this order:
+   ```
+   C:\maxima-5.47.0\gnuplot\bin
+   C:\maxima-5.47.0\bin
+   ```
+
+1. Install `conda`, a package manager for Python.
+
+   My advice is to install Miniconda, which includes a minimal set of components.
+   Follow the instructions on the [Miniconda installation page][].
+
+1. Install GCC, ZeroMQ, and Jupyter via `conda`.
+
+   In a command window (`cmd.exe`), execute the following commands:
+
+   ```
+   > conda install --channel conda-forge m2w64-gcc
+   > conda install --channel conda-forge m2w64-zeromq
+   > conda install --channel conda-forge jupyterlab jupyter_console
+   ```
+
+1. Update `Path` to include the `conda` folders.
+
+   I added the following folders to `Path`, in this order:
+   ```
+   C:\ProgramData\miniconda3\Library\mingw-w64\bin
+   C:\ProgramData\miniconda3\Library\bin
+   C:\ProgramData\miniconda3\Scripts
+   C:\ProgramData\miniconda3
+   ```
+
+1. Install Quicklisp.
+
+   Download the [Quicklisp installer][]
+   and then execute `(load "quicklisp.lisp")` in a Lisp interpreter.
+   The simplest way to arrange that is to execute `maxima.bat`
+   and then, in your Maxima session, execute
+   ```
+   (%i1) :lisp (load "quicklisp.lisp")
+   ```
+
+1. Obtain Maxima-Jupyter source code.
+
+   To obtain the Maxima-Jupyter source code,
+   navigate to the [Maxima-Jupyter project page][]
+   and click the down arrow on the button labeled "Code",
+   and select "Download ZIP".
+
+   Extract the contents of the zip archive into a suitable folder.
+
+1. Install Maxima-Jupyter.
+
+   Assuming that the folder which now contains Maxima-Jupyter is named `path/to/maxima-jupyter`,
+   open a command window (`cmd.exe`) and execute `maxima.bat`,
+
+   ```
+   > cd path/to/maxima-jupyter
+   > maxima.bat
+   ```
+   and then execute the following commands in the Maxima session,
+   ```
+   (%i1) load ("load-maxima-jupyter.lisp");
+   (%i2) jupyter_install_image ();
+   ```
+   which creates an image (binary executable) containing Maxima-Jupyter in addition to Maxima itself.
+
+1. Launch Jupyter.
+
+   In a command window (`cmd.exe`), execute the following command.
+   (It is not necessary to be in any particular folder.)
+
+   ```
+   > jupyter lab
+   ```
+
+   Jupyter will open a tab in a web browser (MS Edge when I tried it),
+   showing icons for any installed kernels (language-specific plugins),
+   which should now include Maxima.
+
+#### Installing Maxima-Jupyter on Unix-like systems
+
+On Unix-like systems, Jupyter is installed via `pip` (Python package installer).
+If you plan on using JupyterLab (which provides the notebook interface) then you
 must install with the `--user` option.
 
 ```
 python3 -m pip --user install jupyterlab jupyter-console
 ```
 
-If you are using Windows then installation via conda is recomended since this
-will also install the ZeroMQ libraries.
+Once Jupyter is installed, you can install Maxima-Jupyter.
 
-```
-conda install -c conda-forge jupyterlab jupyter_console m2w64-gcc m2w64-zeromq
-```
+You can install Maxima-Jupyter from the source files of this repository
+on both Unix-like systems and MS Windows.
 
-Once Jupyter is installed you can either install from the source files of this
-repository, or you can install via the AUR if you are using Arch Linux.
+If you are using Arch Linux, you can install Maxima-Jupyter via the AUR.
 
-#### Method 1. Source Based Installation
+##### Method 1. Source Based Installation
 
-To install from the current source files first download the source files and
-then start a shell in the source directory. Then start Maxima and load the
-initialization script.
+To install Maxima-Jupyter from the current source files,
+first download the source files and then start a shell in the source directory.
+Then start Maxima and load the initialization script.
 
 ```sh
 $ maxima
@@ -125,18 +222,17 @@ The function bug_report() provides bug reporting information.
 (%i1) load("load-maxima-jupyter.lisp");
 ```
 
-After the install script has loaded then install using *one* of the kernel 
-types.
+Then install Maxima-Jupyter using *one* of the kernel types.
 
 1. User-specific installation, with kernel loaded by Quicklisp: `jupyter_install();`
 2. User-specific installation, with kernel saved in binary image: `jupyter_install_image();`
 3. System-wide installation, with kernel loaded by Quicklisp: `jupyter_system_install(true, "pkg/");`
 
-After the installation is complete then exit Maxima. For the System-wide
-installation copy the files in `pkg` to the system root, i.e. 
+After selecting the kernel type, exit Maxima.
+For the system-wide installation, copy the files in `pkg` to the system root, i.e. 
 `sudo cp -r pkg/* /` on Linux.
 
-#### Method 2. Installation on Arch/Manjaro
+##### Method 2. Installing Maxima-Jupyter on Arch/Manjaro Linux
 
 The package for Arch Linux is [maxima-jupyter-git][]. Building and installing
 (including dependencies) can be accomplished with:
@@ -282,6 +378,10 @@ Have fun! If you run into problems, please open a ticket on the issue tracker fo
 [CodeMirror mode for Maxima]: https://www.npmjs.com/package/codemirror-mode-maxima
 [Pygments]: https://pygments.org
 [JupyterLab]: https://jupyter.org/install.html
+[Maxima project download page for Windows]: https://sourceforge.net/projects/maxima/files/Maxima-Windows/
+[Miniconda installation page]: https://docs.anaconda.com/miniconda/install/
+[Quicklisp installer]: https://beta.quicklisp.org/quicklisp.lisp
+[Maxima-Jupyter project page]: https://github.com/robert-dodier/maxima-jupyter
 [maxima-jupyter-git]: https://aur.archlinux.org/packages/maxima-jupyter-git/
 [MaximaJupyterExample.ipynb]: http://nbviewer.jupyter.org/github/robert-dodier/maxima-jupyter/blob/master/examples/MaximaJupyterExample.ipynb
 [MaximaJupyterTalk.ipynb]: http://nbviewer.jupyter.org/github/robert-dodier/maxima-jupyter/blob/master/examples/MaximaJupyterTalk.ipynb
