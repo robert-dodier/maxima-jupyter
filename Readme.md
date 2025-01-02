@@ -162,11 +162,11 @@ this is one way which is known to work.
 
 1. Install Maxima-Jupyter.
 
-   Assuming that the folder which now contains Maxima-Jupyter is named `path/to/maxima-jupyter`,
+   Assuming that the folder which now contains Maxima-Jupyter is named `path\to\maxima-jupyter`,
    open a command window (`cmd.exe`) and execute `maxima.bat`,
 
    ```
-   > cd path/to/maxima-jupyter
+   > cd path\to\maxima-jupyter
    > maxima.bat
    ```
    and then execute the following commands in the Maxima session,
@@ -178,10 +178,11 @@ this is one way which is known to work.
 
 1. Launch Jupyter.
 
-   In a command window (`cmd.exe`), execute the following command.
-   (It is not necessary to be in any particular folder.)
+   In a command window (`cmd.exe`), execute the following commands.
+   Here `path\to\a\writeable\folder` is any folder in which you can create files.
 
    ```
+   > cd path\to\a\writeable\folder
    > jupyter lab
    ```
 
